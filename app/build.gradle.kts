@@ -99,8 +99,9 @@ dependencies {
     // Termux terminal engine
     implementation(libs.terminal.view)
 
-    // Material Icons Extended (Rounded)
-    implementation(libs.materialIconsExtended)
+    // Material Icons
+    implementation(libs.material.icons.core)
+    implementation(libs.material.icons.extended)
 
     // Phosphor Icons
     implementation(libs.phosphor.icons)

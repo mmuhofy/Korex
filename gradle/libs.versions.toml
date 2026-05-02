@@ -12,7 +12,6 @@ terminalView        = "0.118.0"
 coreKtx             = "1.16.0"
 lifecycle           = "2.9.0"
 activityCompose     = "1.10.1"
-materialIconsExtended = "1.7.8"
 phosphorIcons        = "1.0.0"
 guavaConflict       = "9999.0-empty-to-avoid-conflict-with-guava"
 
