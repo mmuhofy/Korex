@@ -1,6 +1,7 @@
 package com.muhofy.korex.terminal
 
 import android.graphics.Typeface
+import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -13,15 +14,6 @@ import com.termux.view.TerminalViewClient
 private const val TERMINAL_TEXT_SIZE = 14
 
 // UNTESTED — verify before use
-/**
- * Compose wrapper for Termux TerminalView.
- *
- * TerminalRenderer must be set manually before attachSession is called,
- * because attachSession calls updateSize() which reads mRenderer.mFontWidth.
- * If mRenderer is null at that point, a NullPointerException is thrown.
- *
- * mRenderer is a public field on TerminalView — we set it directly before attaching the session.
- */
 @Composable
 fun TerminalViewCompose(
     bridge: TerminalBridge,
@@ -33,15 +25,20 @@ fun TerminalViewCompose(
     val terminalView = remember(context) {
         TerminalView(context, null).apply {
             setTerminalViewClient(viewClient)
-            // Manually initialize mRenderer before attachSession so that
-            // updateSize() does not crash when mRenderer.mFontWidth is accessed
             mRenderer = TerminalRenderer(TERMINAL_TEXT_SIZE, Typeface.MONOSPACE)
             attachSession(bridge.session)
+            // Request focus so keyboard opens on tap
+            isFocusable = true
+            isFocusableInTouchMode = true
+            requestFocus()
         }
     }
 
     AndroidView(
-        factory  = { terminalView },
+        factory = { terminalView },
+        update  = { view ->
+            view.requestFocus()
+        },
         modifier = modifier,
     )
 }

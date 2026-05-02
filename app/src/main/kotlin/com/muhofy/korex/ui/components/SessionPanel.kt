@@ -41,6 +41,7 @@ import com.adamglin.phosphoricons.regular.PushPin
 import com.adamglin.phosphoricons.regular.Terminal
 import com.muhofy.korex.data.session.SessionEntity
 import com.muhofy.korex.data.session.SessionStatus
+import com.muhofy.korex.util.shortenPath
 import com.muhofy.korex.ui.theme.KorexStatusActive
 import com.muhofy.korex.ui.theme.KorexStatusBackground
 import com.muhofy.korex.ui.theme.KorexStatusCrashed
@@ -55,6 +56,7 @@ fun SessionPanel(
     onRename: (String, String) -> Unit,
     onPin: (String, Boolean) -> Unit,
     onClose: (String) -> Unit,
+    homeDir: String,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -96,6 +98,7 @@ fun SessionPanel(
                 SessionCard(
                     session  = session,
                     isActive = session.id == activeId,
+                    homeDir  = homeDir,
                     onClick  = { onSessionClick(session.id) },
                     onRename = { onRename(session.id, it) },
                     onPin    = { onPin(session.id, !session.isPinned) },
@@ -111,6 +114,7 @@ fun SessionPanel(
 private fun SessionCard(
     session: SessionEntity,
     isActive: Boolean,
+    homeDir: String,
     onClick: () -> Unit,
     onRename: (String) -> Unit,
     onPin: () -> Unit,
@@ -168,7 +172,7 @@ private fun SessionCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text     = session.cwd,
+                    text     = shortenPath(session.cwd, homeDir),
                     style    = MaterialTheme.typography.bodySmall,
                     color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     maxLines = 1,
