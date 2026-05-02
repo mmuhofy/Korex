@@ -11,7 +11,7 @@ import com.muhofy.korex.util.TERMINAL_TRANSCRIPT_ROWS
  * One TerminalBridge per Korex session.
  */
 class TerminalBridge(
-    context: Context,
+    private val context: Context,
     private val sessionClient: TerminalSessionClient,
 ) {
 
@@ -47,8 +47,4 @@ class TerminalBridge(
         "PATH=/system/bin:/system/xbin",
         "LANG=en_US.UTF-8",
     )
-
-    companion object {
-        // Intentionally empty — HOME is resolved dynamically from context.filesDir
-    }
 }
