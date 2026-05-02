@@ -12,7 +12,7 @@ import com.muhofy.korex.util.TERMINAL_TRANSCRIPT_ROWS
  */
 class TerminalBridge(
     private val context: Context,
-    private val sessionClient: TerminalSessionClient,
+    val sessionClient: KorexTerminalSessionClient,
 ) {
 
     val session: TerminalSession = TerminalSession(

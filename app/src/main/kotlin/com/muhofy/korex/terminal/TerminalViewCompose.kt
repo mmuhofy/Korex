@@ -30,7 +30,7 @@ fun TerminalViewCompose(
             isFocusableInTouchMode = true
             requestFocus()
             // Wire view back to session client so onTextChanged can trigger redraws
-            (bridge.session.client as? KorexTerminalSessionClient)?.terminalView = this
+            bridge.sessionClient.terminalView = this
         }
     }
 
