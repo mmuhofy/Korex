@@ -1,15 +1,9 @@
 package com.muhofy.korex.ui
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -19,14 +13,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.muhofy.korex.ui.components.LeftBar
-import com.muhofy.korex.ui.components.SessionPanel
 import com.muhofy.korex.ui.components.TerminalPane
-
-private val PANEL_WIDTH = 260.dp
 
 @Composable
 fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
@@ -46,42 +36,29 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        // Terminal — always full size, never moves
-        Row(modifier = Modifier.fillMaxSize()) {
-            LeftBar(
-                isPanelOpen      = isPanelOpen,
-                onHamburgerClick = { isPanelOpen = !isPanelOpen },
-            )
-            TerminalPane(
-                modifier        = Modifier.weight(1f),
-                activeSessionId = activeSessionId,
-                getBridge       = { viewModel.getBridge(it) },
-                onSwipeLeft     = { viewModel.switchToNext() },
-                onSwipeRight    = { viewModel.switchToPrevious() },
-            )
-        }
+        // Terminal always full size
+        TerminalPane(
+            modifier        = Modifier.fillMaxSize(),
+            activeSessionId = activeSessionId,
+            getBridge       = { viewModel.getBridge(it) },
+            onSwipeLeft     = { viewModel.switchToNext() },
+            onSwipeRight    = { viewModel.switchToPrevious() },
+        )
 
-        // Session panel — overlays terminal, slides in from left over the rail
-        AnimatedVisibility(
-            visible = isPanelOpen,
-            enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
-            exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
-        ) {
-            SessionPanel(
-                modifier       = Modifier.width(PANEL_WIDTH).fillMaxHeight(),
-                sessions       = sessions,
-                activeId       = activeSessionId,
-                homeDir        = homeDir,
-                onSessionClick = {
-                    viewModel.switchTo(it)
-                    isPanelOpen = false
-                },
-                onNewSession   = { showNewSessionDialog = true },
-                onRename       = { id, name -> viewModel.renameSession(id, name) },
-                onPin          = { id, pinned -> viewModel.pinSession(id, pinned) },
-                onClose        = { viewModel.closeSession(it) },
-            )
-        }
+        // Left bar overlays terminal
+        LeftBar(
+            isPanelOpen     = isPanelOpen,
+            sessions        = sessions,
+            activeSessionId = activeSessionId,
+            onHamburgerClick = { isPanelOpen = true },
+            onClose          = { isPanelOpen = false },
+            onSessionClick   = {
+                viewModel.switchTo(it)
+                isPanelOpen = false
+            },
+            onNewSession     = { showNewSessionDialog = true },
+            onSettings       = { /* settings — later phase */ },
+        )
     }
 
     if (showNewSessionDialog) {
