@@ -1,14 +1,18 @@
 package com.muhofy.korex.data
 
 import androidx.room.Database
-import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import com.muhofy.korex.data.session.SessionConverters
+import com.muhofy.korex.data.session.SessionDao
+import com.muhofy.korex.data.session.SessionEntity
 
-// Placeholder entity — will be replaced with real entities in the session system phase
-@Entity(tableName = "placeholder")
-data class PlaceholderEntity(@PrimaryKey val id: Int = 0)
-
-// Entities and DAOs will be added in the session system phase
-@Database(entities = [PlaceholderEntity::class], version = 1, exportSchema = false)
-abstract class KorexDatabase : RoomDatabase()
+@Database(
+    entities = [SessionEntity::class],
+    version = 1,
+    exportSchema = false,
+)
+@TypeConverters(SessionConverters::class)
+abstract class KorexDatabase : RoomDatabase() {
+    abstract fun sessionDao(): SessionDao
+}
