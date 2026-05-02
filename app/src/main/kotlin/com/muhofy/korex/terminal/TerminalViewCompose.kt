@@ -6,17 +6,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import com.termux.view.TerminalRenderer
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
+
+private const val TERMINAL_TEXT_SIZE = 14
 
 // UNTESTED — verify before use
 /**
  * Compose wrapper for Termux TerminalView.
  *
- * Order matters:
- * 1. setTerminalViewClient — must be set before attachSession
- * 2. setTypeface — creates TerminalRenderer, must happen before onSizeChanged fires
- * 3. attachSession — starts the pty process
+ * TerminalRenderer must be set manually before attachSession is called,
+ * because attachSession calls updateSize() which reads mRenderer.mFontWidth.
+ * If mRenderer is null at that point, a NullPointerException is thrown.
+ *
+ * mRenderer is a public field on TerminalView — we set it directly before attaching the session.
  */
 @Composable
 fun TerminalViewCompose(
@@ -29,19 +33,15 @@ fun TerminalViewCompose(
     val terminalView = remember(context) {
         TerminalView(context, null).apply {
             setTerminalViewClient(viewClient)
-            // TerminalRenderer is created here — must happen before layout/onSizeChanged
-            setTypeface(Typeface.MONOSPACE)
+            // Manually initialize mRenderer before attachSession so that
+            // updateSize() does not crash when mRenderer.mFontWidth is accessed
+            mRenderer = TerminalRenderer(TERMINAL_TEXT_SIZE, Typeface.MONOSPACE)
+            attachSession(bridge.session)
         }
     }
 
     AndroidView(
-        factory = { terminalView },
-        update  = { view ->
-            // attachSession after view is initialized and has a valid typeface/renderer
-            if (view.currentSession == null) {
-                view.attachSession(bridge.session)
-            }
-        },
+        factory  = { terminalView },
         modifier = modifier,
     )
 }
