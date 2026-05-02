@@ -29,6 +29,8 @@ class KorexTerminalViewClient : TerminalViewClient {
 
     override fun copyModeChanged(copyMode: Boolean) {}
 
+    override fun onKeyDown(keyCode: Int, e: KeyEvent?, session: TerminalSession?): Boolean = false
+
     override fun onKeyUp(keyCode: Int, e: KeyEvent?): Boolean = false
 
     override fun onLongPress(event: MotionEvent?): Boolean = false
