@@ -99,6 +99,9 @@ dependencies {
     // Termux terminal engine
     implementation(libs.terminal.view)
 
+    // Phosphor Icons
+    implementation(libs.phosphor.icons)
+
     // Guava — provides ListenableFuture required by terminal-view and concurrent-futures
     implementation("com.google.guava:guava:33.0.0-android")
 

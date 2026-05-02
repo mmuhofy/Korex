@@ -1,11 +1,16 @@
 package com.muhofy.korex.ui
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Surface
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,48 +27,57 @@ import com.muhofy.korex.ui.components.TerminalPane
 
 private val PANEL_WIDTH = 260.dp
 
-// UNTESTED — verify before use
 @Composable
-fun KorexScreen(
-    viewModel: MainViewModel = hiltViewModel(),
-) {
+fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
 
     var isPanelOpen by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
 
+    // Auto-create first session if DB is empty on start
     LaunchedEffect(Unit) {
         viewModel.restoreOnStart()
     }
+    LaunchedEffect(sessions) {
+        if (sessions.isEmpty()) {
+            viewModel.createSession("Main")
+        }
+    }
 
-    val panelWidth by animateDpAsState(
-        targetValue = if (isPanelOpen) PANEL_WIDTH else 0.dp,
-        animationSpec = tween(durationMillis = 200),
-        label = "panelWidth",
-    )
-
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Row(modifier = Modifier.fillMaxSize()) {
 
-            // Left icon rail — always visible
+            // Left icon rail — always visible, only hamburger when panel closed
             LeftBar(
-                isPanelOpen = isPanelOpen,
+                isPanelOpen      = isPanelOpen,
                 onHamburgerClick = { isPanelOpen = !isPanelOpen },
             )
 
-            // Slide-in session panel
-            if (panelWidth > 0.dp) {
-                SessionPanel(
-                    modifier      = Modifier.width(panelWidth),
-                    sessions      = sessions,
-                    activeId      = activeSessionId,
-                    onSessionClick  = { viewModel.switchTo(it) },
-                    onNewSession    = { showNewSessionDialog = true },
-                    onRename        = { id, name -> viewModel.renameSession(id, name) },
-                    onPin           = { id, pinned -> viewModel.pinSession(id, pinned) },
-                    onClose         = { viewModel.closeSession(it) },
-                )
+            // Animated session panel
+            AnimatedVisibility(
+                visible = isPanelOpen,
+                enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
+                exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(PANEL_WIDTH)
+                        .fillMaxHeight()
+                ) {
+                    SessionPanel(
+                        sessions        = sessions,
+                        activeId        = activeSessionId,
+                        onSessionClick  = {
+                            viewModel.switchTo(it)
+                            isPanelOpen = false
+                        },
+                        onNewSession    = { showNewSessionDialog = true },
+                        onRename        = { id, name -> viewModel.renameSession(id, name) },
+                        onPin           = { id, pinned -> viewModel.pinSession(id, pinned) },
+                        onClose         = { viewModel.closeSession(it) },
+                    )
+                }
             }
 
             // Terminal — fills remaining space
@@ -82,6 +96,7 @@ fun KorexScreen(
             onConfirm = { name ->
                 viewModel.createSession(name)
                 showNewSessionDialog = false
+                isPanelOpen = false
             },
             onDismiss = { showNewSessionDialog = false },
         )
