@@ -46,8 +46,6 @@ android {
         compose = true
     }
 
-    // Disable Room schema verification — required when building on Android (RV2IDE)
-    // Room's verifier needs a desktop SQLite native lib which is unavailable on aarch64 Android
     ksp {
         arg("room.verifyDatabase", "false")
     }
@@ -56,9 +54,6 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
-        // Remove unused JNI libs shipped by terminal-view
-        // libtermux.so    → TerminalSession (we use it — keep)
-        // liblocal-socket → AmSocketServer  (not needed in Korex)
         jniLibs {
             excludes += "**/liblocal-socket.so"
         }
@@ -72,7 +67,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.activity.compose)
 
-    // Compose BOM — version managed centrally
+    // Compose BOM
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     implementation(libs.compose.ui)
@@ -81,6 +76,10 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.compose.foundation)
     debugImplementation(libs.compose.ui.tooling)
+
+    // Material Icons
+    implementation(libs.compose.material.icons.core)
+    implementation(libs.compose.material.icons.extended)
 
     // Navigation
     implementation(libs.navigation.compose)
@@ -101,16 +100,10 @@ dependencies {
     // Termux terminal engine
     implementation(libs.terminal.view)
 
-    // Material Icons
-    implementation(libs.materialIconsCore)
-    implementation(libs.materialIconsExtended)
-
     // Phosphor Icons
     implementation(libs.phosphor.icons)
 
-    // Guava — provides ListenableFuture required by terminal-view and concurrent-futures
-    implementation("com.google.guava:guava:33.0.0-android")
-
-    // Required: androidx.concurrent.futures needed by profileinstaller
-    implementation("androidx.concurrent:concurrent-futures:1.2.0")
+    // Guava + concurrent-futures (required by terminal-view)
+    implementation(libs.guava)
+    implementation(libs.concurrent.futures)
 }
