@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.muhofy.korex.ui.theme.KorexTheme
+import androidx.compose.material3.Surface
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -13,9 +13,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KorexTheme {
-                // Root composable will be added in the UI phase
-            }
+            // KorexTheme will be added in the theme phase
+            Surface {  }
         }
     }
 }
