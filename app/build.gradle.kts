@@ -99,8 +99,8 @@ dependencies {
     // Termux terminal engine
     implementation(libs.terminal.view)
 
-    // Required: prevents Guava ListenableFuture conflict from terminal-view
-    implementation(libs.guava.conflict)
+    // Guava — provides ListenableFuture required by terminal-view and concurrent-futures
+    implementation("com.google.guava:guava:33.0.0-android")
 
     // Required: androidx.concurrent.futures needed by profileinstaller
     implementation("androidx.concurrent:concurrent-futures:1.2.0")
