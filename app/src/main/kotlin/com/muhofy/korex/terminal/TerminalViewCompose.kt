@@ -1,7 +1,6 @@
 package com.muhofy.korex.terminal
 
 import android.graphics.Typeface
-import android.view.View
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -27,18 +26,17 @@ fun TerminalViewCompose(
             setTerminalViewClient(viewClient)
             mRenderer = TerminalRenderer(TERMINAL_TEXT_SIZE, Typeface.MONOSPACE)
             attachSession(bridge.session)
-            // Request focus so keyboard opens on tap
             isFocusable = true
             isFocusableInTouchMode = true
             requestFocus()
+            // Wire view back to session client so onTextChanged can trigger redraws
+            (bridge.session.client as? KorexTerminalSessionClient)?.terminalView = this
         }
     }
 
     AndroidView(
-        factory = { terminalView },
-        update  = { view ->
-            view.requestFocus()
-        },
+        factory  = { terminalView },
+        update   = { it.requestFocus() },
         modifier = modifier,
     )
 }
