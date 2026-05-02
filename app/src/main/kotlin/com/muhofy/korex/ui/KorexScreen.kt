@@ -39,56 +39,47 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
     var isPanelOpen by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) {
-        viewModel.restoreOnStart()
-    }
-
+    LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
-        if (sessions.isEmpty()) {
-            viewModel.createSession("Main")
-        }
+        if (sessions.isEmpty()) viewModel.createSession("Main")
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-        Row(modifier = Modifier.fillMaxSize()) {
 
+        // Terminal — always full size, never moves
+        Row(modifier = Modifier.fillMaxSize()) {
             LeftBar(
                 isPanelOpen      = isPanelOpen,
                 onHamburgerClick = { isPanelOpen = !isPanelOpen },
             )
-
-            AnimatedVisibility(
-                visible = isPanelOpen,
-                enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
-                exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
-            ) {
-                Box(
-                    modifier = Modifier
-                        .width(PANEL_WIDTH)
-                        .fillMaxHeight()
-                ) {
-                    SessionPanel(
-                        sessions       = sessions,
-                        activeId       = activeSessionId,
-                        homeDir        = homeDir,
-                        onSessionClick = {
-                            viewModel.switchTo(it)
-                            isPanelOpen = false
-                        },
-                        onNewSession   = { showNewSessionDialog = true },
-                        onRename       = { id, name -> viewModel.renameSession(id, name) },
-                        onPin          = { id, pinned -> viewModel.pinSession(id, pinned) },
-                        onClose        = { viewModel.closeSession(it) },
-                    )
-                }
-            }
-
             TerminalPane(
                 modifier        = Modifier.weight(1f),
                 activeSessionId = activeSessionId,
                 getBridge       = { viewModel.getBridge(it) },
                 onSwipeLeft     = { viewModel.switchToNext() },
                 onSwipeRight    = { viewModel.switchToPrevious() },
+            )
+        }
+
+        // Session panel — overlays terminal, slides in from left over the rail
+        AnimatedVisibility(
+            visible = isPanelOpen,
+            enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
+            exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
+        ) {
+            SessionPanel(
+                modifier       = Modifier.width(PANEL_WIDTH).fillMaxHeight(),
+                sessions       = sessions,
+                activeId       = activeSessionId,
+                homeDir        = homeDir,
+                onSessionClick = {
+                    viewModel.switchTo(it)
+                    isPanelOpen = false
+                },
+                onNewSession   = { showNewSessionDialog = true },
+                onRename       = { id, name -> viewModel.renameSession(id, name) },
+                onPin          = { id, pinned -> viewModel.pinSession(id, pinned) },
+                onClose        = { viewModel.closeSession(it) },
             )
         }
     }
