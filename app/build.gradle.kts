@@ -101,4 +101,7 @@ dependencies {
 
     // Required: prevents Guava ListenableFuture conflict from terminal-view
     implementation(libs.guava.conflict)
+
+    // Required: androidx.concurrent.futures needed by profileinstaller
+    implementation("androidx.concurrent:concurrent-futures:1.2.0")
 }
