@@ -35,9 +35,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-        freeCompilerArgs += "-Xjvm-default=all"
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xjvm-default=all")
+        }
     }
 
     buildFeatures {
@@ -100,8 +102,8 @@ dependencies {
     implementation(libs.terminal.view)
 
     // Material Icons
-    implementation(libs.material.icons.core)
-    implementation(libs.material.icons.extended)
+    implementation(libs.materialIconsCore)
+    implementation(libs.materialIconsExtended)
 
     // Phosphor Icons
     implementation(libs.phosphor.icons)
