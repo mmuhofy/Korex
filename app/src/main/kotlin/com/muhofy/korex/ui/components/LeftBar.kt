@@ -11,11 +11,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -23,20 +28,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Regular
-import com.adamglin.phosphoricons.regular.GearSix
-import com.adamglin.phosphoricons.regular.List
-import com.adamglin.phosphoricons.regular.Plus
-import com.adamglin.phosphoricons.regular.Terminal
-import com.adamglin.phosphoricons.regular.X
 import com.muhofy.korex.data.session.SessionEntity
 
-private val PANEL_WIDTH = 130.dp
-private val ICON_SIZE = 26.dp
+private val PANEL_WIDTH = 120.dp
+private val ICON_SIZE   = 24.dp
 
 @Composable
 fun LeftBar(
@@ -52,12 +53,12 @@ fun LeftBar(
 ) {
     Box(modifier = modifier.fillMaxHeight()) {
 
-        // Hamburger — always visible, top left
+        // Hamburger — only visible when panel is closed
         if (!isPanelOpen) {
             Icon(
-                imageVector        = PhosphorIcons.Regular.List,
+                imageVector        = Icons.Rounded.Menu,
                 contentDescription = "Open menu",
-                tint               = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f),
+                tint               = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
                 modifier           = Modifier
                     .padding(top = 14.dp, start = 12.dp)
                     .size(ICON_SIZE)
@@ -80,31 +81,31 @@ fun LeftBar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                // X — close panel
+                // Close button
                 PanelItem(
-                    icon        = PhosphorIcons.Regular.X,
-                    label       = "Hide",
-                    tint        = MaterialTheme.colorScheme.error,
-                    onClick     = onClose,
-                    topPadding  = 16.dp,
+                    icon       = Icons.Rounded.Close,
+                    label      = "Hide",
+                    tint       = MaterialTheme.colorScheme.error,
+                    onClick    = onClose,
+                    topPadding = 16.dp,
                 )
 
-                // Sessions
+                // Session list
                 sessions.forEach { session ->
                     PanelItem(
-                        icon    = PhosphorIcons.Regular.Terminal,
+                        icon    = Icons.Rounded.Terminal,
                         label   = session.name,
                         tint    = if (session.id == activeSessionId)
                             MaterialTheme.colorScheme.primary
                         else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
                         onClick = { onSessionClick(session.id) },
                     )
                 }
 
                 // New Session
                 PanelItem(
-                    icon    = PhosphorIcons.Regular.Plus,
+                    icon    = Icons.Rounded.Add,
                     label   = "New Session",
                     tint    = MaterialTheme.colorScheme.primary,
                     onClick = onNewSession,
@@ -112,13 +113,13 @@ fun LeftBar(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Settings — bottom
+                // Settings
                 PanelItem(
-                    icon           = PhosphorIcons.Regular.GearSix,
-                    label          = "Settings",
-                    tint           = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    onClick        = onSettings,
-                    bottomPadding  = 20.dp,
+                    icon          = Icons.Rounded.Settings,
+                    label         = "Settings",
+                    tint          = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    onClick       = onSettings,
+                    bottomPadding = 20.dp,
                 )
             }
         }
@@ -127,9 +128,9 @@ fun LeftBar(
 
 @Composable
 private fun PanelItem(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     label: String,
-    tint: androidx.compose.ui.graphics.Color,
+    tint: Color,
     onClick: () -> Unit,
     topPadding: Dp = 8.dp,
     bottomPadding: Dp = 0.dp,
@@ -139,7 +140,7 @@ private fun PanelItem(
             .padding(top = topPadding, bottom = bottomPadding)
             .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -150,11 +151,13 @@ private fun PanelItem(
             modifier           = Modifier.size(ICON_SIZE),
         )
         Text(
-            text      = label,
-            color     = tint,
-            fontSize  = 10.sp,
-            maxLines  = 1,
-            modifier  = Modifier.padding(top = 4.dp),
+            text     = label,
+            color    = tint,
+            fontSize = 10.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 4.dp),
+            style    = MaterialTheme.typography.labelSmall,
         )
     }
 }
