@@ -6,3 +6,6 @@ const val SWIPE_VELOCITY_THRESHOLD = 100
 
 // Session limits
 const val SESSION_NAME_MAX_LENGTH = 32
+
+// Terminal
+const val TERMINAL_TRANSCRIPT_ROWS = 2000
