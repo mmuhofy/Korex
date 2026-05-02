@@ -17,7 +17,7 @@ class TerminalBridge(
 
     val session: TerminalSession = TerminalSession(
         /* shellPath       */ resolveShell(),
-        /* cwd             */ HOME_DIR,
+        /* cwd             */ context.filesDir.absolutePath,
         /* args            */ emptyArray(),
         /* env             */ buildEnv(),
         /* transcriptRows  */ TERMINAL_TRANSCRIPT_ROWS,
@@ -37,18 +37,18 @@ class TerminalBridge(
     // ------------------------------------------------------------------ //
 
     private fun resolveShell(): String =
-        listOf("/data/data/com.termux/files/usr/bin/bash", "/system/bin/sh")
+        listOf("/system/bin/sh", "/system/bin/bash")
             .firstOrNull { java.io.File(it).exists() }
             ?: "/system/bin/sh"
 
     private fun buildEnv(): Array<String> = arrayOf(
         "TERM=xterm-256color",
-        "HOME=$HOME_DIR",
-        "PATH=/data/data/com.termux/files/usr/bin:/system/bin:/system/xbin",
+        "HOME=${context.filesDir.absolutePath}",
+        "PATH=/system/bin:/system/xbin",
         "LANG=en_US.UTF-8",
     )
 
     companion object {
-        private const val HOME_DIR = "/data/data/com.termux/files/home"
+        // Intentionally empty — HOME is resolved dynamically from context.filesDir
     }
 }

@@ -75,7 +75,7 @@ class SessionManager @Inject constructor(
         val entity = SessionEntity(
             id           = id,
             name         = sanitizedName,
-            cwd          = DEFAULT_CWD,
+            cwd          = homeDir,
             env          = "",
             status       = SessionStatus.ACTIVE,
             isPinned     = false,
@@ -171,7 +171,5 @@ class SessionManager @Inject constructor(
         }
     }
 
-    companion object {
-        private const val DEFAULT_CWD = "/data/data/com.termux/files/home"
-    }
+    private val homeDir: String get() = context.filesDir.absolutePath
 }
