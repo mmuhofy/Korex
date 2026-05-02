@@ -100,7 +100,7 @@ dependencies {
     implementation(libs.terminal.view)
 
     // Material Icons Extended (Rounded)
-    implementation(libs.material.icons.extended)
+    implementation(libs.materialIconsExtended)
 
     // Phosphor Icons
     implementation(libs.phosphor.icons)
