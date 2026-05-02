@@ -1,5 +1,6 @@
 package com.muhofy.korex.terminal
 
+import android.graphics.Typeface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -12,8 +13,10 @@ import com.termux.view.TerminalViewClient
 /**
  * Compose wrapper for Termux TerminalView.
  *
- * Session is attached AFTER the view has been laid out (inside update lambda),
- * preventing the NullPointerException on TerminalRenderer.mFontWidth.
+ * Order matters:
+ * 1. setTerminalViewClient — must be set before attachSession
+ * 2. setTypeface — creates TerminalRenderer, must happen before onSizeChanged fires
+ * 3. attachSession — starts the pty process
  */
 @Composable
 fun TerminalViewCompose(
@@ -24,15 +27,20 @@ fun TerminalViewCompose(
     val context = LocalContext.current
 
     val terminalView = remember(context) {
-        TerminalView(context, null)
+        TerminalView(context, null).apply {
+            setTerminalViewClient(viewClient)
+            // TerminalRenderer is created here — must happen before layout/onSizeChanged
+            setTypeface(Typeface.MONOSPACE)
+        }
     }
 
     AndroidView(
         factory = { terminalView },
         update  = { view ->
-            // Set client and attach session here — view is guaranteed to have a valid size
-            view.setTerminalViewClient(viewClient)
-            view.attachSession(bridge.session)
+            // attachSession after view is initialized and has a valid typeface/renderer
+            if (view.currentSession == null) {
+                view.attachSession(bridge.session)
+            }
         },
         modifier = modifier,
     )
