@@ -19,7 +19,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.muhofy.korex.ui.components.ExtraKeyBar
 import com.muhofy.korex.ui.components.LeftBar
 import com.muhofy.korex.ui.components.SnippetSheet
-import com.muhofy.korex.ui.components.TerminalPane
+import com.muhofy.korex.ui.components.SplitTerminalPane
 import com.muhofy.korex.ui.components.TopBar
 
 @Composable
@@ -29,17 +29,19 @@ fun KorexScreen(
 ) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
+    val splitState      by viewModel.splitState.collectAsStateWithLifecycle()
     val activeBridge    = activeSessionId?.let { viewModel.getBridge(it) }
     val activeSession   = sessions.firstOrNull { it.id == activeSessionId }
     val snippets        by snippetViewModel.snippets.collectAsStateWithLifecycle()
 
-    var isPanelOpen          by remember { mutableStateOf(false) }
-    var showNewSessionDialog  by remember { mutableStateOf(false) }
-    var showSnippetSheet      by remember { mutableStateOf(false) }
+    var isPanelOpen         by remember { mutableStateOf(false) }
+    var showNewSessionDialog by remember { mutableStateOf(false) }
+    var showSnippetSheet     by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
         if (sessions.isEmpty()) viewModel.createSession("Main")
+        viewModel.onSessionsUpdated(sessions.map { it.id })
     }
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -62,12 +64,16 @@ fun KorexScreen(
                 modifier          = Modifier.fillMaxWidth(),
             )
 
-            TerminalPane(
-                modifier        = Modifier.weight(1f),
-                activeSessionId = activeSessionId,
+            SplitTerminalPane(
+                splitState      = splitState,
                 getBridge       = { viewModel.getBridge(it) },
+                activeSessionId = activeSessionId,
                 onSwipeLeft     = { viewModel.switchToNext() },
                 onSwipeRight    = { viewModel.switchToPrevious() },
+                onEnterSplit    = { viewModel.enterSplit() },
+                onExitSplit     = { viewModel.exitSplit() },
+                onRatioChange   = { viewModel.updateSplitRatio(it) },
+                modifier        = Modifier.weight(1f),
             )
 
             ExtraKeyBar(
