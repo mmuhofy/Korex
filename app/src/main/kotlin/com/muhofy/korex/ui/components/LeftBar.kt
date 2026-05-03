@@ -20,7 +20,6 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,11 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.muhofy.korex.data.session.SessionEntity
 
 private val PANEL_WIDTH = 120.dp
 private val ICON_SIZE   = 24.dp
@@ -42,18 +39,14 @@ private val ICON_SIZE   = 24.dp
 @Composable
 fun LeftBar(
     isPanelOpen: Boolean,
-    sessions: List<SessionEntity>,
-    activeSessionId: String?,
     onHamburgerClick: () -> Unit,
     onClose: () -> Unit,
-    onSessionClick: (String) -> Unit,
     onNewSession: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxHeight()) {
 
-        // Hamburger — only visible when panel is closed
         if (!isPanelOpen) {
             Icon(
                 imageVector        = Icons.Rounded.Menu,
@@ -67,7 +60,6 @@ fun LeftBar(
             )
         }
 
-        // Slide-in panel
         AnimatedVisibility(
             visible = isPanelOpen,
             enter   = slideInHorizontally(animationSpec = tween(220)) { -it },
@@ -81,7 +73,6 @@ fun LeftBar(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                // Close button
                 PanelItem(
                     icon       = Icons.Rounded.Close,
                     label      = "Hide",
@@ -90,20 +81,6 @@ fun LeftBar(
                     topPadding = 16.dp,
                 )
 
-                // Session list
-                sessions.forEach { session ->
-                    PanelItem(
-                        icon    = Icons.Rounded.Terminal,
-                        label   = session.name,
-                        tint    = if (session.id == activeSessionId)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-                        onClick = { onSessionClick(session.id) },
-                    )
-                }
-
-                // New Session
                 PanelItem(
                     icon    = Icons.Rounded.Add,
                     label   = "New Session",
@@ -113,7 +90,6 @@ fun LeftBar(
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                // Settings
                 PanelItem(
                     icon          = Icons.Rounded.Settings,
                     label         = "Settings",
@@ -154,8 +130,6 @@ private fun PanelItem(
             text     = label,
             color    = tint,
             fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 4.dp),
             style    = MaterialTheme.typography.labelSmall,
         )
