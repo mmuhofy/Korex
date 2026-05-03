@@ -1,6 +1,8 @@
 package com.muhofy.korex.terminal
 
 import android.graphics.Typeface
+import android.view.inputmethod.InputMethodManager
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -35,7 +37,11 @@ fun TerminalViewCompose(
 
     AndroidView(
         factory  = { terminalView },
-        update   = { it.requestFocus() },
+        update   = { view ->
+            view.requestFocus()
+            val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+        },
         modifier = modifier,
     )
 }

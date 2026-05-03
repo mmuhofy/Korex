@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -25,6 +27,7 @@ import com.muhofy.korex.ui.components.TerminalPane
 fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
+    val activeBridge    = activeSessionId?.let { viewModel.getBridge(it) }
 
     var isPanelOpen         by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
@@ -36,9 +39,12 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        Column(modifier = Modifier.fillMaxSize()) {
-
-            // Top session bar — always visible
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .imePadding(), // shrinks when keyboard opens — key bar rides above keyboard
+        ) {
+            // Top session bar
             SessionBar(
                 sessions        = sessions,
                 activeSessionId = activeSessionId,
@@ -56,20 +62,20 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
                 onSwipeRight    = { viewModel.switchToPrevious() },
             )
 
-            // Extra key bar — always visible at bottom
+            // Extra key bar — above keyboard when open, at bottom when closed
             ExtraKeyBar(
-                bridge   = activeSessionId?.let { viewModel.getBridge(it) },
+                bridge   = activeBridge,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
 
-        // LeftBar — overlays top-left, hamburger always visible
+        // LeftBar overlays top-left
         LeftBar(
             isPanelOpen      = isPanelOpen,
             onHamburgerClick = { isPanelOpen = true },
             onClose          = { isPanelOpen = false },
             onNewSession     = { showNewSessionDialog = true },
-            onSettings       = { /* later phase */ },
+            onSettings       = { },
         )
     }
 
