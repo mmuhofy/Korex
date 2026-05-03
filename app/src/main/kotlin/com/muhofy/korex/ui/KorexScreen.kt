@@ -22,12 +22,14 @@ import com.muhofy.korex.ui.components.ExtraKeyBar
 import com.muhofy.korex.ui.components.LeftBar
 import com.muhofy.korex.ui.components.SessionBar
 import com.muhofy.korex.ui.components.TerminalPane
+import com.muhofy.korex.ui.components.TopBar
 
 @Composable
 fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
     val activeBridge    = activeSessionId?.let { viewModel.getBridge(it) }
+    val activeSession   = sessions.firstOrNull { it.id == activeSessionId }
 
     var isPanelOpen         by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
@@ -42,9 +44,16 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding(), // shrinks when keyboard opens — key bar rides above keyboard
+                .imePadding(),
         ) {
-            // Top session bar
+            // Top bar — below status bar
+            TopBar(
+                activeSessionName = activeSession?.name,
+                onHamburgerClick  = { isPanelOpen = true },
+                modifier          = Modifier.fillMaxWidth(),
+            )
+
+            // Session chips bar
             SessionBar(
                 sessions        = sessions,
                 activeSessionId = activeSessionId,
@@ -53,7 +62,7 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
                 modifier        = Modifier.fillMaxWidth().wrapContentHeight(),
             )
 
-            // Terminal fills remaining space
+            // Terminal
             TerminalPane(
                 modifier        = Modifier.weight(1f),
                 activeSessionId = activeSessionId,
@@ -62,14 +71,14 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
                 onSwipeRight    = { viewModel.switchToPrevious() },
             )
 
-            // Extra key bar — above keyboard when open, at bottom when closed
+            // Extra key bar — above keyboard when open
             ExtraKeyBar(
                 bridge   = activeBridge,
                 modifier = Modifier.fillMaxWidth(),
             )
         }
 
-        // LeftBar overlays top-left
+        // LeftBar panel — overlays from left
         LeftBar(
             isPanelOpen      = isPanelOpen,
             onHamburgerClick = { isPanelOpen = true },
