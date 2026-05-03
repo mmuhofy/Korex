@@ -28,6 +28,8 @@ fun TerminalViewCompose(
             isFocusableInTouchMode = true
             requestFocus()
             bridge.sessionClient.terminalView = this
+            // Wire viewClient so onScale can call applyFontScale
+            (viewClient as? KorexTerminalViewClient)?.terminalView = this
         }
     }
 
