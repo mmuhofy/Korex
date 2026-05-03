@@ -46,6 +46,8 @@ class KorexTerminalSessionClient(
 
     override fun onTerminalCursorStateChange(state: Boolean) {}
 
+    override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
+
     override fun getTerminalCursorStyle(): Int = 0 // block cursor
 
     override fun logError(tag: String?, message: String?) {

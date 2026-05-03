@@ -15,6 +15,8 @@ fun rememberTerminalViewClient(): TerminalViewClient {
 
 class KorexTerminalViewClient : TerminalViewClient {
 
+    override fun getInputMode(): Int = 0
+
     override fun onScale(scale: Float): Float = scale
 
     override fun onSingleTapUp(e: MotionEvent?) {}
