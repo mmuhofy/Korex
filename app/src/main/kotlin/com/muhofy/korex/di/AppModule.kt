@@ -3,10 +3,13 @@ package com.muhofy.korex.di
 import android.content.Context
 import androidx.room.Room
 import com.muhofy.korex.data.KorexDatabase
+import com.muhofy.korex.data.history.CommandHistoryDao
+import com.muhofy.korex.data.history.CommandHistoryRepositoryImpl
 import com.muhofy.korex.data.session.SessionDao
 import com.muhofy.korex.data.session.SessionRepositoryImpl
 import com.muhofy.korex.data.snippet.SnippetDao
 import com.muhofy.korex.data.snippet.SnippetRepositoryImpl
+import com.muhofy.korex.domain.CommandHistoryRepository
 import com.muhofy.korex.domain.SessionRepository
 import com.muhofy.korex.domain.SnippetRepository
 import dagger.Binds
@@ -33,6 +36,9 @@ object DatabaseModule {
 
     @Provides
     fun provideSnippetDao(db: KorexDatabase): SnippetDao = db.snippetDao()
+
+    @Provides
+    fun provideCommandHistoryDao(db: KorexDatabase): CommandHistoryDao = db.commandHistoryDao()
 }
 
 @Module
@@ -46,4 +52,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSnippetRepository(impl: SnippetRepositoryImpl): SnippetRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCommandHistoryRepository(impl: CommandHistoryRepositoryImpl): CommandHistoryRepository
 }
