@@ -1,0 +1,42 @@
+name: Generate Bootstrap
+
+on:
+  workflow_dispatch:  # Manual trigger only
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout termux-packages
+        uses: actions/checkout@v4
+        with:
+          repository: termux/termux-packages
+          path: termux-packages
+
+      - name: Set Korex package name in properties.sh
+        run: |
+          cd termux-packages
+          # Override TERMUX_APP_PACKAGE to use Korex's package name
+          # This makes build-bootstraps.sh compile all binaries with the correct prefix
+          sed -i 's/^TERMUX_APP_PACKAGE=.*/TERMUX_APP_PACKAGE=com.muhofy.korex/' scripts/properties.sh
+          grep TERMUX_APP_PACKAGE scripts/properties.sh
+
+      - name: Build bootstrap via Docker (aarch64 only)
+        run: |
+          cd termux-packages
+          # run-docker.sh pulls the official termux build Docker image
+          # and runs build-bootstraps.sh inside it with our custom package name
+          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh \
+            --architectures aarch64 2>&1 | tee bootstrap-build.log
+
+      - name: Verify bootstrap was created
+        run: |
+          ls -lh termux-packages/bootstrap-aarch64.zip
+
+      - name: Upload bootstrap artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bootstrap-korex-aarch64
+          path: termux-packages/bootstrap-aarch64.zip
+          retention-days: 90
