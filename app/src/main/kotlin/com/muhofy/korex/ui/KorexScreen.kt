@@ -55,12 +55,17 @@ fun KorexScreen(
                 activeSessionName = activeSession?.name,
                 sessions          = sessions,
                 activeSessionId   = activeSessionId,
+                isSplit           = splitState?.isSplit == true,
                 onHamburgerClick  = { isPanelOpen = true },
                 onSessionClick    = { viewModel.switchTo(it) },
                 onSessionClose    = { viewModel.closeSession(it) },
                 onSessionRename   = { id, name -> viewModel.renameSession(id, name) },
                 onSessionPin      = { id, pinned -> viewModel.pinSession(id, pinned) },
                 onNewSession      = { showNewSessionDialog = true },
+                onToggleSplit     = {
+                    if (splitState?.isSplit == true) viewModel.exitSplit()
+                    else viewModel.enterSplit()
+                },
                 modifier          = Modifier.fillMaxWidth(),
             )
 
@@ -70,8 +75,6 @@ fun KorexScreen(
                 activeSessionId = activeSessionId,
                 onSwipeLeft     = { viewModel.switchToNext() },
                 onSwipeRight    = { viewModel.switchToPrevious() },
-                onEnterSplit    = { viewModel.enterSplit() },
-                onExitSplit     = { viewModel.exitSplit() },
                 onRatioChange   = { viewModel.updateSplitRatio(it) },
                 modifier        = Modifier.weight(1f),
             )

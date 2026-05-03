@@ -22,6 +22,7 @@ import androidx.compose.material.icons.rounded.DriveFileRenameOutline
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.VerticalSplit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -60,12 +61,14 @@ fun TopBar(
     activeSessionName: String?,
     sessions: List<SessionEntity>,
     activeSessionId: String?,
+    isSplit: Boolean,
     onHamburgerClick: () -> Unit,
     onSessionClick: (String) -> Unit,
     onSessionClose: (String) -> Unit,
     onSessionRename: (String, String) -> Unit,
     onSessionPin: (String, Boolean) -> Unit,
     onNewSession: () -> Unit,
+    onToggleSplit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState()

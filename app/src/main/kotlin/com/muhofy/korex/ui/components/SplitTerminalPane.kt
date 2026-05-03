@@ -3,7 +3,6 @@ package com.muhofy.korex.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -13,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -23,8 +21,6 @@ import androidx.compose.ui.unit.dp
 import com.muhofy.korex.session.SplitScreenState
 import com.muhofy.korex.terminal.TerminalBridge
 import com.muhofy.korex.terminal.TerminalViewCompose
-import com.muhofy.korex.util.SPLIT_RATIO_MIN
-import com.muhofy.korex.util.SPLIT_RATIO_MAX
 import com.muhofy.korex.util.SWIPE_THRESHOLD_PX
 
 private val DIVIDER_WIDTH = 4.dp
@@ -39,8 +35,6 @@ fun SplitTerminalPane(
     activeSessionId: String?,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
-    onEnterSplit: () -> Unit,
-    onExitSplit: () -> Unit,
     onRatioChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -51,14 +45,6 @@ fun SplitTerminalPane(
         modifier = modifier
             .fillMaxSize()
             .onSizeChanged { totalWidth = it.width.toFloat() }
-            .pointerInput(splitState) {
-                detectTransformGestures { _, _, zoom, _ ->
-                    when {
-                        zoom > PINCH_OUT_THRESHOLD && splitState == null -> onEnterSplit()
-                        zoom < PINCH_IN_THRESHOLD  && splitState != null -> onExitSplit()
-                    }
-                }
-            }
     ) {
         if (splitState != null && splitState.isSplit) {
             // Split mode — two panes side by side
