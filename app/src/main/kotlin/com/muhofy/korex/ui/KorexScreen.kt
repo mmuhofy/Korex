@@ -2,8 +2,6 @@ package com.muhofy.korex.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -27,8 +25,9 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
 
-    var isBarVisible         by remember { mutableStateOf(false) }
-    var showNewSessionDialog by remember { mutableStateOf(false) }
+    var isPanelOpen          by remember { mutableStateOf(false) }
+    var isSessionBarVisible  by remember { mutableStateOf(false) }
+    var showNewSessionDialog  by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -37,29 +36,38 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
 
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        // Terminal + LeftBar side by side, terminal fills remaining space
-        Row(modifier = Modifier.fillMaxSize()) {
-            LeftBar(
-                onHamburgerClick = { isBarVisible = !isBarVisible },
-                modifier         = Modifier.fillMaxHeight(),
-            )
-            TerminalPane(
-                modifier        = Modifier.weight(1f),
-                activeSessionId = activeSessionId,
-                getBridge       = { viewModel.getBridge(it) },
-                onSwipeLeft     = { viewModel.switchToNext() },
-                onSwipeRight    = { viewModel.switchToPrevious() },
-            )
-        }
+        // Terminal — always full size
+        TerminalPane(
+            modifier        = Modifier.fillMaxSize(),
+            activeSessionId = activeSessionId,
+            getBridge       = { viewModel.getBridge(it) },
+            onSwipeLeft     = { viewModel.switchToNext() },
+            onSwipeRight    = { viewModel.switchToPrevious() },
+        )
 
-        // Session bar — slides up from bottom, overlays everything
+        // LeftBar — overlays top-left
+        LeftBar(
+            isPanelOpen      = isPanelOpen,
+            sessions         = sessions,
+            activeSessionId  = activeSessionId,
+            onHamburgerClick = { isPanelOpen = true },
+            onClose          = { isPanelOpen = false },
+            onSessionClick   = {
+                viewModel.switchTo(it)
+                isPanelOpen = false
+            },
+            onNewSession     = { showNewSessionDialog = true },
+            onSettings       = { /* later phase */ },
+        )
+
+        // SessionBar — slides up from bottom when hamburger tapped
         SessionBar(
-            visible         = isBarVisible,
+            visible         = isSessionBarVisible,
             sessions        = sessions,
             activeSessionId = activeSessionId,
             onSessionClick  = {
                 viewModel.switchTo(it)
-                isBarVisible = false
+                isSessionBarVisible = false
             },
             onSessionClose  = { viewModel.closeSession(it) },
             onNewSession    = { showNewSessionDialog = true },
@@ -75,7 +83,7 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
             onConfirm = { name ->
                 viewModel.createSession(name)
                 showNewSessionDialog = false
-                isBarVisible = false
+                isPanelOpen = false
             },
             onDismiss = { showNewSessionDialog = false },
         )
