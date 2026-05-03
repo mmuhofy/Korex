@@ -13,12 +13,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,8 +32,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val PANEL_WIDTH = 120.dp
-private val ICON_SIZE   = 24.dp
+private val PANEL_WIDTH = 90.dp
+private val ICON_SIZE   = 22.dp
 
 @Composable
 fun LeftBar(
@@ -46,20 +45,6 @@ fun LeftBar(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxHeight()) {
-
-        if (!isPanelOpen) {
-            Icon(
-                imageVector        = Icons.Rounded.Menu,
-                contentDescription = "Open menu",
-                tint               = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.75f),
-                modifier           = Modifier
-                    .padding(top = 14.dp, start = 12.dp)
-                    .size(ICON_SIZE)
-                    .clickable { onHamburgerClick() }
-                    .align(Alignment.TopStart),
-            )
-        }
-
         AnimatedVisibility(
             visible = isPanelOpen,
             enter   = slideInHorizontally(animationSpec = tween(220)) { -it },
@@ -69,23 +54,18 @@ fun LeftBar(
                 modifier = Modifier
                     .width(PANEL_WIDTH)
                     .fillMaxHeight()
-                    .background(MaterialTheme.colorScheme.surface),
+                    .background(MaterialTheme.colorScheme.surface)
+                    .statusBarsPadding(), // start below status bar, same as TopBar
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
+                // Close button — top, aligned with TopBar height
                 PanelItem(
                     icon       = Icons.Rounded.Close,
                     label      = "Hide",
                     tint       = MaterialTheme.colorScheme.error,
                     onClick    = onClose,
-                    topPadding = 16.dp,
-                )
-
-                PanelItem(
-                    icon    = Icons.Rounded.Add,
-                    label   = "New Session",
-                    tint    = MaterialTheme.colorScheme.primary,
-                    onClick = onNewSession,
+                    topPadding = 14.dp,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -116,7 +96,7 @@ private fun PanelItem(
             .padding(top = topPadding, bottom = bottomPadding)
             .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -130,7 +110,7 @@ private fun PanelItem(
             text     = label,
             color    = tint,
             fontSize = 10.sp,
-            modifier = Modifier.padding(top = 4.dp),
+            modifier = Modifier.padding(top = 3.dp),
             style    = MaterialTheme.typography.labelSmall,
         )
     }
