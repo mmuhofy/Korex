@@ -10,8 +10,6 @@ import com.termux.view.TerminalRenderer
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 
-private const val TERMINAL_TEXT_SIZE = 14
-
 // UNTESTED — verify before use
 @Composable
 fun TerminalViewCompose(
@@ -24,13 +22,13 @@ fun TerminalViewCompose(
     val terminalView = remember(context) {
         TerminalView(context, null).apply {
             setTerminalViewClient(viewClient)
-            mRenderer = TerminalRenderer(TERMINAL_TEXT_SIZE, Typeface.MONOSPACE)
+            mRenderer = TerminalRenderer(bridge.fontSize, Typeface.MONOSPACE)
             attachSession(bridge.session)
             isFocusable = true
             isFocusableInTouchMode = true
             requestFocus()
-            // Wire view back to session client so onTextChanged can trigger redraws
             bridge.sessionClient.terminalView = this
+            (viewClient as? KorexTerminalViewClient)?.terminalView = this
         }
     }
 
@@ -39,4 +37,15 @@ fun TerminalViewCompose(
         update   = { it.requestFocus() },
         modifier = modifier,
     )
+}
+
+/**
+ * Called from KorexTerminalViewClient.onScale().
+ * Rebuilds TerminalRenderer with the new font size and invalidates the view.
+ */
+fun TerminalView.applyFontScale(bridge: TerminalBridge, scaleFactor: Float) {
+    if (bridge.scaleFontSize(scaleFactor)) {
+        mRenderer = TerminalRenderer(bridge.fontSize, Typeface.MONOSPACE)
+        invalidate()
+    }
 }

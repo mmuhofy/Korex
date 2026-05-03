@@ -4,10 +4,14 @@ import android.content.Context
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.muhofy.korex.util.TERMINAL_TRANSCRIPT_ROWS
+import com.muhofy.korex.util.TERMINAL_FONT_SIZE_DEFAULT
+import com.muhofy.korex.util.TERMINAL_FONT_SIZE_MIN
+import com.muhofy.korex.util.TERMINAL_FONT_SIZE_MAX
 
 // UNTESTED — verify before use
 /**
  * Creates and owns a single TerminalSession (pty process).
+ * Also owns the current font size for this session's TerminalView.
  * One TerminalBridge per Korex session.
  */
 class TerminalBridge(
@@ -24,15 +28,29 @@ class TerminalBridge(
         /* client          */ sessionClient,
     )
 
-    /** Write user input into the pty. */
-    fun write(data: String) {
-        session.write(data)
+    /** Current font size in sp — mutated by pinch zoom and settings slider. */
+    var fontSize: Int = TERMINAL_FONT_SIZE_DEFAULT
+        private set
+
+    /**
+     * Scale font size by [factor], clamped to [TERMINAL_FONT_SIZE_MIN]..[TERMINAL_FONT_SIZE_MAX].
+     * Returns true if the size actually changed.
+     */
+    fun scaleFontSize(factor: Float): Boolean {
+        val next = (fontSize * factor).toInt()
+            .coerceIn(TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX)
+        if (next == fontSize) return false
+        fontSize = next
+        return true
     }
 
-    /** Terminate the pty process. */
-    fun destroy() {
-        session.finishIfRunning()
+    fun setFontSize(size: Int) {
+        fontSize = size.coerceIn(TERMINAL_FONT_SIZE_MIN, TERMINAL_FONT_SIZE_MAX)
     }
+
+    fun write(data: String) = session.write(data)
+
+    fun destroy() = session.finishIfRunning()
 
     // ------------------------------------------------------------------ //
 

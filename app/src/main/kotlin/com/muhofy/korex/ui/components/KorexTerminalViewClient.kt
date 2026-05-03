@@ -5,19 +5,28 @@ import android.view.MotionEvent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.termux.terminal.TerminalSession
+import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
+import com.muhofy.korex.terminal.TerminalBridge
+import com.muhofy.korex.terminal.applyFontScale
 
 // UNTESTED — verify before use
 @Composable
-fun rememberTerminalViewClient(): TerminalViewClient {
-    return remember { KorexTerminalViewClient() }
+fun rememberTerminalViewClient(bridge: TerminalBridge): TerminalViewClient {
+    return remember(bridge) { KorexTerminalViewClient(bridge) }
 }
 
-class KorexTerminalViewClient : TerminalViewClient {
+class KorexTerminalViewClient(
+    private val bridge: TerminalBridge,
+) : TerminalViewClient {
 
-    override fun getInputMode(): Int = 0
+    // Set after view is created — needed for font scale rebuild
+    var terminalView: TerminalView? = null
 
-    override fun onScale(scale: Float): Float = scale
+    override fun onScale(scale: Float): Float {
+        terminalView?.applyFontScale(bridge, scale)
+        return scale
+    }
 
     override fun onSingleTapUp(e: MotionEvent?) {}
 
@@ -48,6 +57,8 @@ class KorexTerminalViewClient : TerminalViewClient {
     override fun onCodePoint(codePoint: Int, ctrlDown: Boolean, session: TerminalSession?): Boolean = false
 
     override fun onEmulatorSet() {}
+
+    override fun getInputMode(): Int = 0
 
     override fun logError(tag: String?, message: String?) {
         android.util.Log.e(tag ?: "KorexTerminalView", message ?: "")
