@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.muhofy.korex.ui.components.ExtraKeyBar
 import com.muhofy.korex.ui.components.LeftBar
 import com.muhofy.korex.ui.components.SessionBar
 import com.muhofy.korex.ui.components.TerminalPane
@@ -53,6 +54,12 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
                 getBridge       = { viewModel.getBridge(it) },
                 onSwipeLeft     = { viewModel.switchToNext() },
                 onSwipeRight    = { viewModel.switchToPrevious() },
+            )
+
+            // Extra key bar — always visible at bottom
+            ExtraKeyBar(
+                bridge   = activeSessionId?.let { viewModel.getBridge(it) },
+                modifier = Modifier.fillMaxWidth(),
             )
         }
 
