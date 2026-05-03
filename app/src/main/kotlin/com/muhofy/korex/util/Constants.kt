@@ -7,8 +7,9 @@ const val SWIPE_VELOCITY_THRESHOLD = 100
 // Session limits
 const val SESSION_NAME_MAX_LENGTH = 32
 
-// Terminal
-const val TERMINAL_TRANSCRIPT_ROWS  = 2000
+// Split screen
+const val SPLIT_RATIO_MIN = 0.2f
+const val SPLIT_RATIO_MAX = 0.8f
 const val TERMINAL_FONT_SIZE_DEFAULT = 14
 const val TERMINAL_FONT_SIZE_MIN     = 8
 const val TERMINAL_FONT_SIZE_MAX     = 32
