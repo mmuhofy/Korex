@@ -77,6 +77,9 @@ dependencies {
     implementation(libs.compose.foundation)
     debugImplementation(libs.compose.ui.tooling)
 
+    // Material Components (required for Theme.Material3.DayNight.NoActionBar)
+    implementation(libs.materialComponents)
+
     // Material Icons
     implementation(libs.compose.material.icons.core)
     implementation(libs.compose.material.icons.extended)
