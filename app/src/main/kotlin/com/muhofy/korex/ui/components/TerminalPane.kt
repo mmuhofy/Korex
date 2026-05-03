@@ -2,6 +2,7 @@ package com.muhofy.korex.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -18,6 +19,8 @@ import com.muhofy.korex.terminal.TerminalBridge
 import com.muhofy.korex.terminal.TerminalViewCompose
 import com.muhofy.korex.util.SWIPE_THRESHOLD_PX
 
+private const val VERTICAL_SWIPE_THRESHOLD = 80f
+
 // UNTESTED — verify before use
 @Composable
 fun TerminalPane(
@@ -25,9 +28,11 @@ fun TerminalPane(
     getBridge: (String) -> TerminalBridge?,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
+    onSwipeUp: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var dragTotal by remember { mutableFloatStateOf(0f) }
+    var hDrag by remember { mutableFloatStateOf(0f) }
+    var vDrag by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
@@ -35,16 +40,27 @@ fun TerminalPane(
             .background(MaterialTheme.colorScheme.background)
             .pointerInput(activeSessionId) {
                 detectHorizontalDragGestures(
-                    onDragStart  = { dragTotal = 0f },
+                    onDragStart  = { hDrag = 0f },
                     onDragEnd    = {
                         when {
-                            dragTotal < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
-                            dragTotal > SWIPE_THRESHOLD_PX  -> onSwipeRight()
+                            hDrag < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
+                            hDrag > SWIPE_THRESHOLD_PX  -> onSwipeRight()
                         }
-                        dragTotal = 0f
+                        hDrag = 0f
                     },
-                    onDragCancel = { dragTotal = 0f },
-                    onHorizontalDrag = { _, delta -> dragTotal += delta },
+                    onDragCancel = { hDrag = 0f },
+                    onHorizontalDrag = { _, d -> hDrag += d },
+                )
+            }
+            .pointerInput(Unit) {
+                detectVerticalDragGestures(
+                    onDragStart  = { vDrag = 0f },
+                    onDragEnd    = {
+                        if (vDrag < -VERTICAL_SWIPE_THRESHOLD) onSwipeUp()
+                        vDrag = 0f
+                    },
+                    onDragCancel = { vDrag = 0f },
+                    onVerticalDrag = { _, d -> vDrag += d },
                 )
             },
     ) {
@@ -52,7 +68,6 @@ fun TerminalPane(
 
         if (bridge != null) {
             val viewClient = rememberTerminalViewClient(bridge)
-            // Wire viewClient.terminalView after composition via AndroidView factory
             TerminalViewCompose(
                 bridge     = bridge,
                 viewClient = viewClient,

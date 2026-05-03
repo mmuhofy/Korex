@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.muhofy.korex.ui.components.CommandHistorySheet
 import com.muhofy.korex.ui.components.ExtraKeyBar
 import com.muhofy.korex.ui.components.LeftBar
 import com.muhofy.korex.ui.components.SnippetSheet
@@ -26,6 +27,7 @@ import com.muhofy.korex.ui.components.TopBar
 fun KorexScreen(
     viewModel: MainViewModel = hiltViewModel(),
     snippetViewModel: SnippetViewModel = hiltViewModel(),
+    historyViewModel: CommandHistoryViewModel = hiltViewModel(),
 ) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
@@ -33,10 +35,13 @@ fun KorexScreen(
     val activeBridge    = activeSessionId?.let { viewModel.getBridge(it) }
     val activeSession   = sessions.firstOrNull { it.id == activeSessionId }
     val snippets        by snippetViewModel.snippets.collectAsStateWithLifecycle()
+    val history         by historyViewModel.history.collectAsStateWithLifecycle()
+    val historyQuery    by historyViewModel.searchQuery.collectAsStateWithLifecycle()
 
-    var isPanelOpen         by remember { mutableStateOf(false) }
-    var showNewSessionDialog by remember { mutableStateOf(false) }
-    var showSnippetSheet     by remember { mutableStateOf(false) }
+    var isPanelOpen          by remember { mutableStateOf(false) }
+    var showNewSessionDialog  by remember { mutableStateOf(false) }
+    var showSnippetSheet      by remember { mutableStateOf(false) }
+    var showHistorySheet      by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -75,6 +80,7 @@ fun KorexScreen(
                 activeSessionId = activeSessionId,
                 onSwipeLeft     = { viewModel.switchToNext() },
                 onSwipeRight    = { viewModel.switchToPrevious() },
+                onSwipeUp       = { showHistorySheet = true },
                 onRatioChange   = { viewModel.updateSplitRatio(it) },
                 modifier        = Modifier.weight(1f),
             )
@@ -111,10 +117,28 @@ fun KorexScreen(
         SnippetSheet(
             snippets  = snippets,
             onDismiss = { showSnippetSheet = false },
-            onExecute = { command -> activeBridge?.write("$command\n") },
+            onExecute = { command ->
+                activeBridge?.write("$command\n")
+                activeSessionId?.let { historyViewModel.recordCommand(it, command) }
+            },
             onAdd     = { t, c -> snippetViewModel.addSnippet(t, c) },
             onEdit    = { snippet, t, c -> snippetViewModel.updateSnippet(snippet, t, c) },
             onDelete  = { snippetViewModel.deleteSnippet(it) },
+        )
+    }
+
+    if (showHistorySheet) {
+        CommandHistorySheet(
+            history       = history,
+            searchQuery   = historyQuery,
+            onQueryChange = { historyViewModel.searchQuery.value = it },
+            onDismiss     = { showHistorySheet = false },
+            onExecute     = { command ->
+                activeBridge?.write("$command\n")
+                activeSessionId?.let { historyViewModel.recordCommand(it, command) }
+            },
+            onDelete      = { historyViewModel.delete(it) },
+            onClearAll    = { historyViewModel.clearAll() },
         )
     }
 }
