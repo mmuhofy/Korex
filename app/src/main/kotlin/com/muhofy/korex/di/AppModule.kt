@@ -5,7 +5,10 @@ import androidx.room.Room
 import com.muhofy.korex.data.KorexDatabase
 import com.muhofy.korex.data.session.SessionDao
 import com.muhofy.korex.data.session.SessionRepositoryImpl
+import com.muhofy.korex.data.snippet.SnippetDao
+import com.muhofy.korex.data.snippet.SnippetRepositoryImpl
 import com.muhofy.korex.domain.SessionRepository
+import com.muhofy.korex.domain.SnippetRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -26,8 +29,10 @@ object DatabaseModule {
             .build()
 
     @Provides
-    fun provideSessionDao(db: KorexDatabase): SessionDao =
-        db.sessionDao()
+    fun provideSessionDao(db: KorexDatabase): SessionDao = db.sessionDao()
+
+    @Provides
+    fun provideSnippetDao(db: KorexDatabase): SnippetDao = db.snippetDao()
 }
 
 @Module
@@ -37,4 +42,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindSessionRepository(impl: SessionRepositoryImpl): SessionRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSnippetRepository(impl: SnippetRepositoryImpl): SnippetRepository
 }
