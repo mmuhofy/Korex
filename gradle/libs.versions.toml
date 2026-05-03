@@ -50,9 +50,6 @@ room-compiler                   = { group = "androidx.room",                    
 # DataStore
 datastore-preferences           = { group = "androidx.datastore",               name = "datastore-preferences",         version.ref = "datastore" }
 
-# Termux terminal engine
-terminal-view                   = { group = "com.termux.termux-app",            name = "terminal-view",                 version.ref = "terminalView" }
-
 # Phosphor Icons
 phosphor-icons                  = { group = "com.adamglin",                     name = "phosphor-icon-android",         version.ref = "phosphorIcons" }
 

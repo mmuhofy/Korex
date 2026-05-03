@@ -20,6 +20,11 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
+      - name: Set up Android NDK
+        uses: android-actions/setup-android@v3
+        with:
+          ndk-version: '27.0.12077973'
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 

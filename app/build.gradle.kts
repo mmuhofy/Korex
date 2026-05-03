@@ -97,8 +97,9 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
-    // Termux terminal engine
-    implementation(libs.terminal.view)
+    // Termux terminal engine — local modules
+    implementation(project(":core:terminal-emulator"))
+    implementation(project(":core:terminal-view"))
 
     // Phosphor Icons
     implementation(libs.phosphor.icons)

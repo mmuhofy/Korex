@@ -17,10 +17,10 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // Termux terminal-view library source
-        maven { url = uri("https://jitpack.io") }
     }
 }
 
 rootProject.name = "korex"
 include(":app")
+include(":core:terminal-emulator")
+include(":core:terminal-view")
