@@ -22,6 +22,7 @@ object DatabaseModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): KorexDatabase =
         Room.databaseBuilder(context, KorexDatabase::class.java, "korex.db")
+            .fallbackToDestructiveMigration()
             .build()
 
     @Provides
