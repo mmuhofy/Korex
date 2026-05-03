@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +41,7 @@ fun LeftBar(
     isPanelOpen: Boolean,
     onHamburgerClick: () -> Unit,
     onClose: () -> Unit,
-    onNewSession: () -> Unit,
+    onSnippets: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -66,6 +67,13 @@ fun LeftBar(
                     tint       = MaterialTheme.colorScheme.error,
                     onClick    = onClose,
                     topPadding = 14.dp,
+                )
+
+                PanelItem(
+                    icon    = Icons.Rounded.Code,
+                    label   = "Snippets",
+                    tint    = MaterialTheme.colorScheme.primary,
+                    onClick = onSnippets,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))

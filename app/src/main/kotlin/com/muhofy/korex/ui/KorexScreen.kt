@@ -18,18 +18,24 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.muhofy.korex.ui.components.ExtraKeyBar
 import com.muhofy.korex.ui.components.LeftBar
+import com.muhofy.korex.ui.components.SnippetSheet
 import com.muhofy.korex.ui.components.TerminalPane
 import com.muhofy.korex.ui.components.TopBar
 
 @Composable
-fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
+fun KorexScreen(
+    viewModel: MainViewModel = hiltViewModel(),
+    snippetViewModel: SnippetViewModel = hiltViewModel(),
+) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
     val activeBridge    = activeSessionId?.let { viewModel.getBridge(it) }
     val activeSession   = sessions.firstOrNull { it.id == activeSessionId }
+    val snippets        by snippetViewModel.snippets.collectAsStateWithLifecycle()
 
     var isPanelOpen          by remember { mutableStateOf(false) }
     var showNewSessionDialog  by remember { mutableStateOf(false) }
+    var showSnippetSheet      by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -74,7 +80,10 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
             isPanelOpen      = isPanelOpen,
             onHamburgerClick = { isPanelOpen = true },
             onClose          = { isPanelOpen = false },
-            onNewSession     = { showNewSessionDialog = true },
+            onSnippets       = {
+                isPanelOpen = false
+                showSnippetSheet = true
+            },
             onSettings       = { },
         )
     }
@@ -84,9 +93,19 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
             onConfirm = { name ->
                 viewModel.createSession(name)
                 showNewSessionDialog = false
-                isPanelOpen = false
             },
             onDismiss = { showNewSessionDialog = false },
+        )
+    }
+
+    if (showSnippetSheet) {
+        SnippetSheet(
+            snippets  = snippets,
+            onDismiss = { showSnippetSheet = false },
+            onExecute = { command -> activeBridge?.write("$command\n") },
+            onAdd     = { t, c -> snippetViewModel.addSnippet(t, c) },
+            onEdit    = { snippet, t, c -> snippetViewModel.updateSnippet(snippet, t, c) },
+            onDelete  = { snippetViewModel.deleteSnippet(it) },
         )
     }
 }
