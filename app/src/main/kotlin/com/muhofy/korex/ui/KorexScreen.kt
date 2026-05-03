@@ -50,6 +50,8 @@ fun KorexScreen(viewModel: MainViewModel = hiltViewModel()) {
                 onHamburgerClick  = { isPanelOpen = true },
                 onSessionClick    = { viewModel.switchTo(it) },
                 onSessionClose    = { viewModel.closeSession(it) },
+                onSessionRename   = { id, name -> viewModel.renameSession(id, name) },
+                onSessionPin      = { id, pinned -> viewModel.pinSession(id, pinned) },
                 onNewSession      = { showNewSessionDialog = true },
                 modifier          = Modifier.fillMaxWidth(),
             )

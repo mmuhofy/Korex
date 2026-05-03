@@ -1,14 +1,15 @@
 package com.muhofy.korex.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -17,14 +18,20 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.DriveFileRenameOutline
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.rounded.PushPin
 import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +63,8 @@ fun TopBar(
     onHamburgerClick: () -> Unit,
     onSessionClick: (String) -> Unit,
     onSessionClose: (String) -> Unit,
+    onSessionRename: (String, String) -> Unit,
+    onSessionPin: (String, Boolean) -> Unit,
     onNewSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -66,7 +75,7 @@ fun TopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -74,7 +83,7 @@ fun TopBar(
         Icon(
             imageVector        = Icons.Rounded.Menu,
             contentDescription = "Open menu",
-            tint               = MaterialTheme.colorScheme.onSurface,
+            tint               = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
             modifier           = Modifier
                 .size(24.dp)
                 .clickable { onHamburgerClick() },
@@ -84,18 +93,17 @@ fun TopBar(
 
         Text(
             text       = "Korex",
-            style      = MaterialTheme.typography.titleMedium,
+            style      = androidx.compose.material3.MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = MaterialTheme.colorScheme.onSurface,
+            color      = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
-        // Session button
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { showSheet = true }
                 .padding(horizontal = 10.dp, vertical = 5.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -104,13 +112,13 @@ fun TopBar(
             Icon(
                 imageVector        = Icons.Rounded.Terminal,
                 contentDescription = null,
-                tint               = MaterialTheme.colorScheme.primary,
+                tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                 modifier           = Modifier.size(14.dp),
             )
             Text(
                 text     = activeSessionName ?: "Session",
-                style    = MaterialTheme.typography.labelSmall,
-                color    = MaterialTheme.colorScheme.onSurface,
+                style    = androidx.compose.material3.MaterialTheme.typography.labelSmall,
+                color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 12.sp,
@@ -122,7 +130,7 @@ fun TopBar(
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
             sheetState       = sheetState,
-            containerColor   = MaterialTheme.colorScheme.surface,
+            containerColor   = androidx.compose.material3.MaterialTheme.colorScheme.surface,
         ) {
             Column(
                 modifier = Modifier
@@ -131,13 +139,13 @@ fun TopBar(
             ) {
                 Text(
                     text     = "Sessions",
-                    style    = MaterialTheme.typography.titleSmall,
-                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    style    = androidx.compose.material3.MaterialTheme.typography.titleSmall,
+                    color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
 
                 HorizontalDivider(
-                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                     thickness = 0.5.dp,
                 )
 
@@ -151,18 +159,17 @@ fun TopBar(
                                 showSheet = false
                             }
                         },
-                        onClose  = {
-                            onSessionClose(session.id)
-                        },
+                        onClose  = { onSessionClose(session.id) },
+                        onRename = { newName -> onSessionRename(session.id, newName) },
+                        onPin    = { onSessionPin(session.id, !session.isPinned) },
                     )
                 }
 
                 HorizontalDivider(
-                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                     thickness = 0.5.dp,
                 )
 
-                // New session
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,13 +186,13 @@ fun TopBar(
                     Icon(
                         imageVector        = Icons.Rounded.Add,
                         contentDescription = "New session",
-                        tint               = MaterialTheme.colorScheme.primary,
+                        tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                         modifier           = Modifier.size(20.dp),
                     )
                     Text(
                         text  = "New Session",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -193,60 +200,151 @@ fun TopBar(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun SessionSheetItem(
     session: SessionEntity,
     isActive: Boolean,
     onClick: () -> Unit,
     onClose: () -> Unit,
+    onRename: (String) -> Unit,
+    onPin: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(
-                if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                else MaterialTheme.colorScheme.surface
-            )
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        // Status dot
-        Box(
-            modifier = Modifier
-                .size(8.dp)
-                .clip(RoundedCornerShape(50))
-                .background(session.status.toColor()),
-        )
+    var menuExpanded  by remember { mutableStateOf(false) }
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var renameText    by remember { mutableStateOf(session.name) }
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text     = session.name,
-                style    = MaterialTheme.typography.bodyMedium,
-                color    = if (isActive) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+    Box {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    if (isActive) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    else androidx.compose.material3.MaterialTheme.colorScheme.surface
+                )
+                .combinedClickable(
+                    onClick     = onClick,
+                    onLongClick = { menuExpanded = true },
+                )
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(session.status.toColor()),
             )
-            Text(
-                text     = session.cwd,
-                style    = MaterialTheme.typography.bodySmall,
-                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                fontSize = 11.sp,
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text       = session.name,
+                        style      = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                        color      = if (isActive) androidx.compose.material3.MaterialTheme.colorScheme.primary
+                                     else androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                        maxLines   = 1,
+                        overflow   = TextOverflow.Ellipsis,
+                    )
+                    if (session.isPinned) {
+                        Icon(
+                            imageVector        = Icons.Rounded.PushPin,
+                            contentDescription = "Pinned",
+                            tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            modifier           = Modifier.padding(start = 6.dp).size(12.dp),
+                        )
+                    }
+                }
+                Text(
+                    text     = session.cwd,
+                    style    = androidx.compose.material3.MaterialTheme.typography.bodySmall,
+                    color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    fontSize = 11.sp,
+                )
+            }
+
+            Icon(
+                imageVector        = Icons.Rounded.Close,
+                contentDescription = "Close",
+                tint               = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                modifier           = Modifier
+                    .size(16.dp)
+                    .clickable { onClose() },
             )
         }
 
-        Icon(
-            imageVector        = Icons.Rounded.Close,
-            contentDescription = "Close session",
-            tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
-            modifier           = Modifier
-                .size(16.dp)
-                .clickable { onClose() },
+        // Context menu on long press
+        DropdownMenu(
+            expanded         = menuExpanded,
+            onDismissRequest = { menuExpanded = false },
+        ) {
+            DropdownMenuItem(
+                text         = { Text("Rename") },
+                leadingIcon  = {
+                    Icon(Icons.Rounded.DriveFileRenameOutline, null, modifier = Modifier.size(18.dp))
+                },
+                onClick      = {
+                    menuExpanded = false
+                    renameText = session.name
+                    showRenameDialog = true
+                },
+            )
+            DropdownMenuItem(
+                text         = { Text(if (session.isPinned) "Unpin" else "Pin") },
+                leadingIcon  = {
+                    Icon(Icons.Rounded.PushPin, null, modifier = Modifier.size(18.dp))
+                },
+                onClick      = {
+                    menuExpanded = false
+                    onPin()
+                },
+            )
+            DropdownMenuItem(
+                text         = {
+                    Text("Close", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                },
+                leadingIcon  = {
+                    Icon(
+                        Icons.Rounded.Close,
+                        null,
+                        tint     = androidx.compose.material3.MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+                onClick      = {
+                    menuExpanded = false
+                    onClose()
+                },
+            )
+        }
+    }
+
+    // Rename dialog
+    if (showRenameDialog) {
+        AlertDialog(
+            onDismissRequest = { showRenameDialog = false },
+            title            = { Text("Rename Session") },
+            text             = {
+                OutlinedTextField(
+                    value         = renameText,
+                    onValueChange = { renameText = it },
+                    label         = { Text("Session name") },
+                    singleLine    = true,
+                )
+            },
+            confirmButton    = {
+                TextButton(onClick = {
+                    onRename(renameText)
+                    showRenameDialog = false
+                }) { Text("Rename") }
+            },
+            dismissButton    = {
+                TextButton(onClick = { showRenameDialog = false }) { Text("Cancel") }
+            },
         )
     }
 }

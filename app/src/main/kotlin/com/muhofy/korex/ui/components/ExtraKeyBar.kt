@@ -137,15 +137,15 @@ private fun KeyText(
 ) {
     Text(
         text     = label,
-        fontSize = 13.sp,
+        fontSize = 15.sp,
         color    = if (isActive)
             MaterialTheme.colorScheme.primary
         else
             MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f),
-        style    = MaterialTheme.typography.labelSmall,
+        style    = MaterialTheme.typography.labelMedium,
         modifier = Modifier
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .padding(horizontal = 14.dp, vertical = 9.dp),
     )
 }
 
