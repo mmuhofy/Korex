@@ -12,7 +12,7 @@ import com.muhofy.korex.terminal.applyFontScale
 
 // UNTESTED — verify before use
 @Composable
-fun rememberTerminalViewClient(bridge: TerminalBridge): TerminalViewClient {
+fun rememberTerminalViewClient(bridge: TerminalBridge): KorexTerminalViewClient {
     return remember(bridge) { KorexTerminalViewClient(bridge) }
 }
 
@@ -20,7 +20,6 @@ class KorexTerminalViewClient(
     private val bridge: TerminalBridge,
 ) : TerminalViewClient {
 
-    // Set after view is created — needed for font scale rebuild
     var terminalView: TerminalView? = null
 
     override fun onScale(scale: Float): Float {
@@ -60,31 +59,11 @@ class KorexTerminalViewClient(
 
     override fun getInputMode(): Int = 0
 
-    override fun logError(tag: String?, message: String?) {
-        android.util.Log.e(tag ?: "KorexTerminalView", message ?: "")
-    }
-
-    override fun logWarn(tag: String?, message: String?) {
-        android.util.Log.w(tag ?: "KorexTerminalView", message ?: "")
-    }
-
-    override fun logInfo(tag: String?, message: String?) {
-        android.util.Log.i(tag ?: "KorexTerminalView", message ?: "")
-    }
-
-    override fun logDebug(tag: String?, message: String?) {
-        android.util.Log.d(tag ?: "KorexTerminalView", message ?: "")
-    }
-
-    override fun logVerbose(tag: String?, message: String?) {
-        android.util.Log.v(tag ?: "KorexTerminalView", message ?: "")
-    }
-
-    override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) {
-        android.util.Log.e(tag ?: "KorexTerminalView", message ?: "", e)
-    }
-
-    override fun logStackTrace(tag: String?, e: Exception?) {
-        android.util.Log.e(tag ?: "KorexTerminalView", "", e)
-    }
+    override fun logError(tag: String?, message: String?) { android.util.Log.e(tag ?: "KorexTerminalView", message ?: "") }
+    override fun logWarn(tag: String?, message: String?) { android.util.Log.w(tag ?: "KorexTerminalView", message ?: "") }
+    override fun logInfo(tag: String?, message: String?) { android.util.Log.i(tag ?: "KorexTerminalView", message ?: "") }
+    override fun logDebug(tag: String?, message: String?) { android.util.Log.d(tag ?: "KorexTerminalView", message ?: "") }
+    override fun logVerbose(tag: String?, message: String?) { android.util.Log.v(tag ?: "KorexTerminalView", message ?: "") }
+    override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) { android.util.Log.e(tag ?: "KorexTerminalView", message ?: "", e) }
+    override fun logStackTrace(tag: String?, e: Exception?) { android.util.Log.e(tag ?: "KorexTerminalView", "", e) }
 }

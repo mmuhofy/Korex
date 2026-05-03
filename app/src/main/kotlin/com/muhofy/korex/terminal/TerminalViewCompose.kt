@@ -28,7 +28,6 @@ fun TerminalViewCompose(
             isFocusableInTouchMode = true
             requestFocus()
             bridge.sessionClient.terminalView = this
-            (viewClient as? KorexTerminalViewClient)?.terminalView = this
         }
     }
 
@@ -40,8 +39,7 @@ fun TerminalViewCompose(
 }
 
 /**
- * Called from KorexTerminalViewClient.onScale().
- * Rebuilds TerminalRenderer with the new font size and invalidates the view.
+ * Rebuilds TerminalRenderer with updated font size and invalidates the view.
  */
 fun TerminalView.applyFontScale(bridge: TerminalBridge, scaleFactor: Float) {
     if (bridge.scaleFontSize(scaleFactor)) {

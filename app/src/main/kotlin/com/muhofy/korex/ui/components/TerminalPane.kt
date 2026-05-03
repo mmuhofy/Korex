@@ -51,10 +51,12 @@ fun TerminalPane(
         val bridge = activeSessionId?.let { getBridge(it) }
 
         if (bridge != null) {
+            val viewClient = rememberTerminalViewClient(bridge)
+            // Wire viewClient.terminalView after composition via AndroidView factory
             TerminalViewCompose(
-                bridge      = bridge,
-                viewClient  = rememberTerminalViewClient(),
-                modifier    = Modifier.fillMaxSize(),
+                bridge     = bridge,
+                viewClient = viewClient,
+                modifier   = Modifier.fillMaxSize(),
             )
         } else {
             Text(
