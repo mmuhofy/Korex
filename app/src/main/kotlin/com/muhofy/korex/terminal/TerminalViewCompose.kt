@@ -11,6 +11,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.termux.view.TerminalRenderer
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
+import java.lang.ref.WeakReference
+
+/** Global weak reference to the active TerminalView — used by MainActivity to restore keyboard. */
+var terminalViewRef: WeakReference<TerminalView> = WeakReference(null)
 
 // UNTESTED — verify before use
 @Composable
@@ -30,14 +34,16 @@ fun TerminalViewCompose(
             isFocusableInTouchMode = true
             requestFocus()
             bridge.sessionClient.terminalView = this
-            // Wire viewClient so onScale can call applyFontScale
             (viewClient as? KorexTerminalViewClient)?.terminalView = this
+            // Register globally for keyboard restore
+            terminalViewRef = WeakReference(this)
         }
     }
 
     AndroidView(
-        factory  = { terminalView },
-        update   = { view ->
+        factory = { terminalView },
+        update  = { view ->
+            terminalViewRef = WeakReference(view)
             view.requestFocus()
             val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
             imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
