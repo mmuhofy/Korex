@@ -56,6 +56,8 @@ android {
         }
         jniLibs {
             excludes += "**/liblocal-socket.so"
+            // Bootstrap zip must not be compressed — loaded via System.loadLibrary() at runtime
+            useLegacyPackaging = true
         }
     }
 }

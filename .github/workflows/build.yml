@@ -28,6 +28,42 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Download latest bootstrap zip from releases
+        run: |
+          RELEASE=$(curl -s https://api.github.com/repos/termux/termux-packages/releases \
+            | jq -r '[.[] | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+          echo "Bootstrap release: $RELEASE"
+
+          wget -q "https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip" \
+            -O bootstrap-aarch64-original.zip
+
+          # Patch paths for Korex
+          mkdir -p patched_bootstrap
+          unzip -q bootstrap-aarch64-original.zip -d patched_bootstrap
+
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "text"; then
+              sed -i 's|/data/data/com\.termux|/data/data/com.muhofy.korex|g' "$f"
+            fi
+          done
+
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "ELF"; then
+              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.muhofy.korex/|g' "$f" 2>/dev/null || true
+            fi
+          done
+
+          cd patched_bootstrap
+          zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
+          cd ..
+          ls -lh bootstrap-aarch64-korex.zip
+
+      - name: Place bootstrap as native library
+        run: |
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          cp bootstrap-aarch64-korex.zip app/src/main/jniLibs/arm64-v8a/libtermux-bootstrap.so
+          ls -lh app/src/main/jniLibs/arm64-v8a/
+
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
