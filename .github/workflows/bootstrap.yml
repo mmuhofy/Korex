@@ -8,44 +8,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout termux-packages
-        uses: actions/checkout@v4
-        with:
-          repository: termux/termux-packages
-          path: termux-packages
-
-      - name: Set Korex package name in properties.sh
-        run: |
-          cd termux-packages
-          sed -i 's/^TERMUX_APP_PACKAGE=.*/TERMUX_APP_PACKAGE=com.muhofy.korex/' scripts/properties.sh
-          echo "--- properties.sh after patch ---"
-          grep TERMUX_APP_PACKAGE scripts/properties.sh
-
-      - name: Install required tools (no Docker)
+      - name: Install required tools
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y \
-            curl wget jq zip unzip bzip2 xz-utils
+          sudo apt-get install -y curl wget jq zip unzip bzip2 xz-utils file perl
 
-      - name: Download bootstrap zip directly from Termux CDN
+      - name: Get latest bootstrap release URL
+        id: get_url
         run: |
-          cd termux-packages
+          # Get latest release tag from termux-packages
+          RELEASE=$(curl -s https://api.github.com/repos/termux/termux-packages/releases \
+            | jq -r '[.[] | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+          echo "Latest release: $RELEASE"
 
-          # Get latest bootstrap URL for aarch64
-          BOOTSTRAP_URL="https://packages-cf.termux.dev/bootstrap/bootstrap-aarch64.zip"
-          echo "Downloading from: $BOOTSTRAP_URL"
-          wget -q "$BOOTSTRAP_URL" -O bootstrap-aarch64-original.zip
+          # Build download URL
+          URL="https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip"
+          echo "Download URL: $URL"
+          echo "url=$URL" >> $GITHUB_OUTPUT
 
+      - name: Download bootstrap zip
+        run: |
+          wget -q "${{ steps.get_url.outputs.url }}" -O bootstrap-aarch64-original.zip
           ls -lh bootstrap-aarch64-original.zip
 
       - name: Patch bootstrap paths for Korex
         run: |
-          cd termux-packages
           mkdir -p patched_bootstrap
           unzip -q bootstrap-aarch64-original.zip -d patched_bootstrap
 
-          echo "--- Files before patch ---"
-          ls patched_bootstrap/ | head -20
+          echo "Total files: $(find patched_bootstrap -type f | wc -l)"
 
           # Patch text files
           find patched_bootstrap -type f | while read f; do
@@ -54,11 +45,9 @@ jobs:
             fi
           done
 
-          # Patch binary ELF files (rpath/interpreter strings)
+          # Patch ELF binaries with perl (handles binary strings)
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "ELF"; then
-              # Use sed on binary — safe for fixed-length string replacement
-              # com.termux (11 chars) -> com.muhofy.korex (16 chars) — different length, use perl
               perl -pi -e 's|/data/data/com\.termux/|/data/data/com.muhofy.korex/|g' "$f" 2>/dev/null || true
             fi
           done
@@ -67,12 +56,11 @@ jobs:
           cd patched_bootstrap
           zip -r9 ../bootstrap-aarch64.zip . 2>/dev/null
           cd ..
-
           ls -lh bootstrap-aarch64.zip
 
       - name: Upload bootstrap artifact
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-korex-aarch64
-          path: termux-packages/bootstrap-aarch64.zip
+          path: bootstrap-aarch64.zip
           retention-days: 90
