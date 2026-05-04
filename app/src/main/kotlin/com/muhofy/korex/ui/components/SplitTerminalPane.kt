@@ -25,8 +25,6 @@ import com.muhofy.korex.terminal.TerminalViewCompose
 import com.muhofy.korex.util.SWIPE_THRESHOLD_PX
 
 private val DIVIDER_WIDTH = 4.dp
-private const val PINCH_OUT_THRESHOLD = 1.15f
-private const val PINCH_IN_THRESHOLD  = 0.88f
 
 // UNTESTED — verify before use
 @Composable
@@ -39,34 +37,24 @@ fun SplitTerminalPane(
     onSwipeUp: () -> Unit,
     onRatioChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-                        .pointerInput(activeSessionId) {
-                            detectVerticalDragGestures(
-                                onDragStart  = { },
-                                onDragEnd    = { },
-                                onDragCancel = { },
-                                onVerticalDrag = { _, dy ->
-                                    if (dy < -SWIPE_THRESHOLD_PX) onSwipeUp()
-                                },
-                            )
-                        }
+) {
     var totalWidth by remember { mutableFloatStateOf(0f) }
-    var dragTotal  by remember { mutableFloatStateOf(0f) }
+    var hDrag      by remember { mutableFloatStateOf(0f) }
+    var vDrag      by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onSizeChanged { totalWidth = it.width.toFloat() }
+            .onSizeChanged { totalWidth = it.width.toFloat() },
     ) {
         if (splitState != null && splitState.isSplit) {
             // Split mode — two panes side by side
             Row(modifier = Modifier.fillMaxSize()) {
 
-                // Primary pane
                 val primaryBridge = getBridge(splitState.primarySessionId)
                 PaneContainer(
-                    bridge     = primaryBridge,
-                    isActive   = activeSessionId == splitState.primarySessionId,
-                    modifier   = Modifier
+                    bridge   = primaryBridge,
+                    modifier = Modifier
                         .weight(splitState.splitRatio)
                         .fillMaxHeight(),
                 )
@@ -83,38 +71,47 @@ fun SplitTerminalPane(
                                     onRatioChange(dragAmount.x / totalWidth)
                                 }
                             }
-                        }
+                        },
                 )
 
-                // Secondary pane
                 val secondaryBridge = getBridge(splitState.secondarySessionId!!)
                 PaneContainer(
                     bridge   = secondaryBridge,
-                    isActive = activeSessionId == splitState.secondarySessionId,
                     modifier = Modifier
                         .weight(1f - splitState.splitRatio)
                         .fillMaxHeight(),
                 )
             }
         } else {
-            // Single pane mode with swipe gesture
+            // Single pane with swipe gestures
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(activeSessionId) {
                         detectHorizontalDragGestures(
-                            onDragStart  = { dragTotal = 0f },
-                            onDragEnd    = {
+                            onDragStart      = { hDrag = 0f },
+                            onDragEnd        = {
                                 when {
-                                    dragTotal < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
-                                    dragTotal > SWIPE_THRESHOLD_PX  -> onSwipeRight()
+                                    hDrag < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
+                                    hDrag > SWIPE_THRESHOLD_PX  -> onSwipeRight()
                                 }
-                                dragTotal = 0f
+                                hDrag = 0f
                             },
-                            onDragCancel = { dragTotal = 0f },
-                            onHorizontalDrag = { _, delta -> dragTotal += delta },
+                            onDragCancel     = { hDrag = 0f },
+                            onHorizontalDrag = { _, d -> hDrag += d },
                         )
                     }
+                    .pointerInput(activeSessionId) {
+                        detectVerticalDragGestures(
+                            onDragStart    = { vDrag = 0f },
+                            onDragEnd      = {
+                                if (vDrag < -SWIPE_THRESHOLD_PX) onSwipeUp()
+                                vDrag = 0f
+                            },
+                            onDragCancel   = { vDrag = 0f },
+                            onVerticalDrag = { _, d -> vDrag += d },
+                        )
+                    },
             ) {
                 val bridge = activeSessionId?.let { getBridge(it) }
                 if (bridge != null) {
@@ -133,12 +130,9 @@ fun SplitTerminalPane(
 @Composable
 private fun PaneContainer(
     bridge: TerminalBridge?,
-    isActive: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Box(
-        modifier = modifier.background(MaterialTheme.colorScheme.background)
-    ) {
+    Box(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (bridge != null) {
             val viewClient = rememberTerminalViewClient(bridge)
             TerminalViewCompose(
