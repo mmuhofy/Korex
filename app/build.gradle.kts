@@ -18,6 +18,22 @@ android {
         versionName     = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        externalNativeBuild {
+            ndkBuild {
+                // Bootstrap zip path is passed at build time by CI
+                val bootstrapZip = System.getenv("BOOTSTRAP_ZIP_PATH")
+                    ?: "${rootDir}/bootstrap-aarch64-korex.zip"
+                arguments("BOOTSTRAP_ZIP_PATH=$bootstrapZip")
+                abiFilters("arm64-v8a")
+            }
+        }
+    }
+
+    externalNativeBuild {
+        ndkBuild {
+            path = file("src/main/jni/Android.mk")
+        }
     }
 
     buildTypes {

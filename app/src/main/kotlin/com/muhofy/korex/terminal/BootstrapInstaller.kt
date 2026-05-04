@@ -26,10 +26,10 @@ object BootstrapInstaller {
 
     val isLoaded: Boolean by lazy {
         try {
-            System.loadLibrary("termux-bootstrap")
+            System.loadLibrary("korex-bootstrap")
             true
         } catch (e: UnsatisfiedLinkError) {
-            Log.e(TAG, "Failed to load libtermux-bootstrap.so", e)
+            Log.e(TAG, "Failed to load libkorex-bootstrap.so", e)
             false
         }
     }

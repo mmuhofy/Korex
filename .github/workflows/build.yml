@@ -58,16 +58,12 @@ jobs:
           cd ..
           ls -lh bootstrap-aarch64-korex.zip
 
-      - name: Place bootstrap as native library
-        run: |
-          mkdir -p app/src/main/jniLibs/arm64-v8a
-          cp bootstrap-aarch64-korex.zip app/src/main/jniLibs/arm64-v8a/libtermux-bootstrap.so
-          ls -lh app/src/main/jniLibs/arm64-v8a/
-
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
       - name: Build debug APK
+        env:
+          BOOTSTRAP_ZIP_PATH: ${{ github.workspace }}/bootstrap-aarch64-korex.zip
         run: ./gradlew assembleDebug
 
       - name: Upload APK
