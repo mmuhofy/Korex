@@ -92,13 +92,10 @@ object BootstrapInstaller {
                         FileOutputStream(outFile).use { out ->
                             zis.copyTo(out)
                         }
-                        // Preserve executable bit
-                        if (name.startsWith("usr/bin/") ||
-                            name.startsWith("usr/lib/") ||
-                            name.startsWith("usr/libexec/")
-                        ) {
-                            outFile.setExecutable(true, false)
-                        }
+                        // Set executable bit for all non-text files
+                        outFile.setExecutable(true, false)
+                        outFile.setReadable(true, false)
+                        outFile.setWritable(true, false)
                     }
                 }
 
