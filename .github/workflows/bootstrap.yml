@@ -1,7 +1,7 @@
 name: Generate Bootstrap
 
 on:
-  workflow_dispatch:  # Manual trigger only
+  workflow_dispatch:
 
 jobs:
   generate:
@@ -17,22 +17,58 @@ jobs:
       - name: Set Korex package name in properties.sh
         run: |
           cd termux-packages
-          # Override TERMUX_APP_PACKAGE to use Korex's package name
-          # This makes build-bootstraps.sh compile all binaries with the correct prefix
           sed -i 's/^TERMUX_APP_PACKAGE=.*/TERMUX_APP_PACKAGE=com.muhofy.korex/' scripts/properties.sh
+          echo "--- properties.sh after patch ---"
           grep TERMUX_APP_PACKAGE scripts/properties.sh
 
-      - name: Build bootstrap via Docker (aarch64 only)
+      - name: Install required tools (no Docker)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y \
+            curl wget jq zip unzip bzip2 xz-utils
+
+      - name: Download bootstrap zip directly from Termux CDN
         run: |
           cd termux-packages
-          # run-docker.sh pulls the official termux build Docker image
-          # and runs build-bootstraps.sh inside it with our custom package name
-          ./scripts/run-docker.sh ./scripts/build-bootstraps.sh \
-            --architectures aarch64 2>&1 | tee bootstrap-build.log
 
-      - name: Verify bootstrap was created
+          # Get latest bootstrap URL for aarch64
+          BOOTSTRAP_URL="https://packages-cf.termux.dev/bootstrap/bootstrap-aarch64.zip"
+          echo "Downloading from: $BOOTSTRAP_URL"
+          wget -q "$BOOTSTRAP_URL" -O bootstrap-aarch64-original.zip
+
+          ls -lh bootstrap-aarch64-original.zip
+
+      - name: Patch bootstrap paths for Korex
         run: |
-          ls -lh termux-packages/bootstrap-aarch64.zip
+          cd termux-packages
+          mkdir -p patched_bootstrap
+          unzip -q bootstrap-aarch64-original.zip -d patched_bootstrap
+
+          echo "--- Files before patch ---"
+          ls patched_bootstrap/ | head -20
+
+          # Patch text files
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "text"; then
+              sed -i 's|/data/data/com\.termux|/data/data/com.muhofy.korex|g' "$f"
+            fi
+          done
+
+          # Patch binary ELF files (rpath/interpreter strings)
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "ELF"; then
+              # Use sed on binary — safe for fixed-length string replacement
+              # com.termux (11 chars) -> com.muhofy.korex (16 chars) — different length, use perl
+              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.muhofy.korex/|g' "$f" 2>/dev/null || true
+            fi
+          done
+
+          # Repack
+          cd patched_bootstrap
+          zip -r9 ../bootstrap-aarch64.zip . 2>/dev/null
+          cd ..
+
+          ls -lh bootstrap-aarch64.zip
 
       - name: Upload bootstrap artifact
         uses: actions/upload-artifact@v4
