@@ -3,6 +3,7 @@ package com.muhofy.korex.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -35,9 +36,19 @@ fun SplitTerminalPane(
     activeSessionId: String?,
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
+    onSwipeUp: () -> Unit,
     onRatioChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-) {
+                        .pointerInput(activeSessionId) {
+                            detectVerticalDragGestures(
+                                onDragStart  = { },
+                                onDragEnd    = { },
+                                onDragCancel = { },
+                                onVerticalDrag = { _, dy ->
+                                    if (dy < -SWIPE_THRESHOLD_PX) onSwipeUp()
+                                },
+                            )
+                        }
     var totalWidth by remember { mutableFloatStateOf(0f) }
     var dragTotal  by remember { mutableFloatStateOf(0f) }
 

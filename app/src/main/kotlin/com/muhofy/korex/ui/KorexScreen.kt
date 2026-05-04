@@ -36,7 +36,7 @@ fun KorexScreen(
     val activeSession   = sessions.firstOrNull { it.id == activeSessionId }
     val snippets        by snippetViewModel.snippets.collectAsStateWithLifecycle()
     val history         by historyViewModel.history.collectAsStateWithLifecycle()
-    val historyQuery    by historyViewModel.searchQuery.collectAsStateWithLifecycle()
+    val searchQuery     by historyViewModel.searchQuery.collectAsStateWithLifecycle()
 
     var isPanelOpen          by remember { mutableStateOf(false) }
     var showNewSessionDialog  by remember { mutableStateOf(false) }
@@ -71,7 +71,7 @@ fun KorexScreen(
                     if (splitState?.isSplit == true) viewModel.exitSplit()
                     else viewModel.enterSplit()
                 },
-                modifier          = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
             )
 
             SplitTerminalPane(
@@ -99,7 +99,7 @@ fun KorexScreen(
                 isPanelOpen = false
                 showSnippetSheet = true
             },
-            onSettings       = { },
+            onSettings = { },
         )
     }
 
@@ -130,8 +130,8 @@ fun KorexScreen(
     if (showHistorySheet) {
         CommandHistorySheet(
             history       = history,
-            searchQuery   = historyQuery,
-            onQueryChange = { historyViewModel.searchQuery.value = it },
+            searchQuery   = searchQuery,
+            onSearchChange = { historyViewModel.searchQuery.value = it },
             onDismiss     = { showHistorySheet = false },
             onExecute     = { command ->
                 activeBridge?.write("$command\n")

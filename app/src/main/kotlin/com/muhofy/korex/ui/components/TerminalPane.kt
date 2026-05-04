@@ -19,8 +19,6 @@ import com.muhofy.korex.terminal.TerminalBridge
 import com.muhofy.korex.terminal.TerminalViewCompose
 import com.muhofy.korex.util.SWIPE_THRESHOLD_PX
 
-private const val VERTICAL_SWIPE_THRESHOLD = 80f
-
 // UNTESTED — verify before use
 @Composable
 fun TerminalPane(
@@ -48,19 +46,19 @@ fun TerminalPane(
                         }
                         hDrag = 0f
                     },
-                    onDragCancel = { hDrag = 0f },
+                    onDragCancel    = { hDrag = 0f },
                     onHorizontalDrag = { _, d -> hDrag += d },
                 )
             }
-            .pointerInput(Unit) {
+            .pointerInput(activeSessionId) {
                 detectVerticalDragGestures(
                     onDragStart  = { vDrag = 0f },
                     onDragEnd    = {
-                        if (vDrag < -VERTICAL_SWIPE_THRESHOLD) onSwipeUp()
+                        if (vDrag < -SWIPE_THRESHOLD_PX) onSwipeUp()
                         vDrag = 0f
                     },
-                    onDragCancel = { vDrag = 0f },
-                    onVerticalDrag = { _, d -> vDrag += d },
+                    onDragCancel    = { vDrag = 0f },
+                    onVerticalDrag  = { _, d -> vDrag += d },
                 )
             },
     ) {
