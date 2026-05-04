@@ -28,6 +28,8 @@ class TerminalBridge(
         /* client          */ sessionClient,
     )
 
+    private val prefix = File(context.filesDir, "usr")
+
     /** Current font size in sp — mutated by pinch zoom and settings slider. */
     var fontSize: Int = TERMINAL_FONT_SIZE_DEFAULT
         private set
@@ -54,15 +56,25 @@ class TerminalBridge(
 
     // ------------------------------------------------------------------ //
 
-    private fun resolveShell(): String =
-        listOf("/system/bin/sh", "/system/bin/bash")
-            .firstOrNull { java.io.File(it).exists() }
-            ?: "/system/bin/sh"
+    private fun resolveShell(): String {
+        val bootstrapBash = File(context.filesDir, "usr/bin/bash")
+        return when {
+            bootstrapBash.exists() -> bootstrapBash.absolutePath
+            else -> "/system/bin/sh"
+        }
+    }
 
-    private fun buildEnv(): Array<String> = arrayOf(
-        "TERM=xterm-256color",
-        "HOME=${context.filesDir.absolutePath}",
-        "PATH=/system/bin:/system/xbin",
-        "LANG=en_US.UTF-8",
-    )
+    private fun buildEnv(): Array<String> {
+        val filesDir  = context.filesDir.absolutePath
+        val prefixDir = "$filesDir/usr"
+        return arrayOf(
+            "TERM=xterm-256color",
+            "HOME=$filesDir/home",
+            "PREFIX=$prefixDir",
+            "PATH=$prefixDir/bin:$prefixDir/bin/applets:/system/bin:/system/xbin",
+            "LD_LIBRARY_PATH=$prefixDir/lib",
+            "LANG=en_US.UTF-8",
+            "TMPDIR=$prefixDir/tmp",
+        )
+    }
 }
