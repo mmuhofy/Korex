@@ -1,6 +1,7 @@
 package com.muhofy.korex.terminal
 
 import android.content.Context
+import java.io.File
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import com.muhofy.korex.util.TERMINAL_TRANSCRIPT_ROWS
