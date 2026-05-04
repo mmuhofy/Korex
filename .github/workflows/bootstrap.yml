@@ -16,15 +16,28 @@ jobs:
       - name: Get latest bootstrap release URL
         id: get_url
         run: |
-          # Get latest release tag from termux-packages
-          RELEASE=$(curl -s https://api.github.com/repos/termux/termux-packages/releases \
-            | jq -r '[.[] | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+          RESPONSE=$(curl -s \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            https://api.github.com/repos/termux/termux-packages/releases)
+
+          echo "API response type: $(echo "$RESPONSE" | jq -r 'type')"
+
+          RELEASE=$(echo "$RESPONSE" \
+            | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+
+          if [ -z "$RELEASE" ] || [ "$RELEASE" = "null" ]; then
+            echo "ERROR: Could not find a bootstrap release. API response:"
+            echo "$RESPONSE" | head -50
+            exit 1
+          fi
+
           echo "Latest release: $RELEASE"
 
-          # Build download URL
           URL="https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip"
           echo "Download URL: $URL"
           echo "url=$URL" >> $GITHUB_OUTPUT
+          echo "release=$RELEASE" >> $GITHUB_OUTPUT
 
       - name: Download bootstrap zip
         run: |
@@ -54,7 +67,7 @@ jobs:
 
           # Repack
           cd patched_bootstrap
-          zip -r9 ../bootstrap-aarch64.zip . 2>/dev/null
+          zip -r9 ../bootstrap-aarch64.zip .
           cd ..
           ls -lh bootstrap-aarch64.zip
 
