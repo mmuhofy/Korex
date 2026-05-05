@@ -29,6 +29,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -72,21 +73,22 @@ fun TopBar(
     modifier: Modifier = Modifier,
 ) {
     val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    var showSheet by remember { mutableStateOf(false) }
+    val scope      = rememberCoroutineScope()
+    var showSheet  by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
+            .background(MaterialTheme.colorScheme.surface)
             .statusBarsPadding()
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Hamburger — opens left panel
         Icon(
             imageVector        = Icons.Rounded.Menu,
             contentDescription = "Open menu",
-            tint               = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            tint               = MaterialTheme.colorScheme.onSurface,
             modifier           = Modifier
                 .size(24.dp)
                 .clickable { onHamburgerClick() },
@@ -96,44 +98,60 @@ fun TopBar(
 
         Text(
             text       = "Korex",
-            style      = androidx.compose.material3.MaterialTheme.typography.titleMedium,
+            style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
-            color      = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+            color      = MaterialTheme.colorScheme.onSurface,
         )
 
         Spacer(modifier = Modifier.weight(1f))
 
+        // Active session chip — tap to open session sheet
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(androidx.compose.material3.MaterialTheme.colorScheme.surfaceVariant)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { showSheet = true }
                 .padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalAlignment          = Alignment.CenterVertically,
+            horizontalArrangement      = Arrangement.spacedBy(6.dp),
         ) {
             Icon(
                 imageVector        = Icons.Rounded.Terminal,
                 contentDescription = null,
-                tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                tint               = MaterialTheme.colorScheme.primary,
                 modifier           = Modifier.size(14.dp),
             )
             Text(
                 text     = activeSessionName ?: "Session",
-                style    = androidx.compose.material3.MaterialTheme.typography.labelSmall,
-                color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                style    = MaterialTheme.typography.labelSmall,
+                color    = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 fontSize = 12.sp,
             )
         }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Split screen toggle button
+        Icon(
+            imageVector        = Icons.Rounded.SpaceDashboard,
+            contentDescription = if (isSplit) "Exit split screen" else "Enter split screen",
+            tint               = if (isSplit)
+                MaterialTheme.colorScheme.primary
+            else
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+            modifier           = Modifier
+                .size(22.dp)
+                .clickable { onToggleSplit() },
+        )
     }
 
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
             sheetState       = sheetState,
-            containerColor   = androidx.compose.material3.MaterialTheme.colorScheme.surface,
+            containerColor   = MaterialTheme.colorScheme.surface,
         ) {
             Column(
                 modifier = Modifier
@@ -142,13 +160,13 @@ fun TopBar(
             ) {
                 Text(
                     text     = "Sessions",
-                    style    = androidx.compose.material3.MaterialTheme.typography.titleSmall,
-                    color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    style    = MaterialTheme.typography.titleSmall,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
 
                 HorizontalDivider(
-                    color     = androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                     thickness = 0.5.dp,
                 )
 
@@ -169,7 +187,7 @@ fun TopBar(
                 }
 
                 HorizontalDivider(
-                    color     = androidx.compose.material3.MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
                     thickness = 0.5.dp,
                 )
 
@@ -183,19 +201,19 @@ fun TopBar(
                             }
                         }
                         .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment     = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Icon(
                         imageVector        = Icons.Rounded.Add,
                         contentDescription = "New session",
-                        tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        tint               = MaterialTheme.colorScheme.primary,
                         modifier           = Modifier.size(20.dp),
                     )
                     Text(
                         text  = "New Session",
-                        style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color = androidx.compose.material3.MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -213,24 +231,24 @@ private fun SessionSheetItem(
     onRename: (String) -> Unit,
     onPin: () -> Unit,
 ) {
-    var menuExpanded  by remember { mutableStateOf(false) }
+    var menuExpanded     by remember { mutableStateOf(false) }
     var showRenameDialog by remember { mutableStateOf(false) }
-    var renameText    by remember { mutableStateOf(session.name) }
+    var renameText       by remember { mutableStateOf(session.name) }
 
     Box {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    if (isActive) androidx.compose.material3.MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                    else androidx.compose.material3.MaterialTheme.colorScheme.surface
+                    if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
+                    else MaterialTheme.colorScheme.surface
                 )
                 .combinedClickable(
                     onClick     = onClick,
                     onLongClick = { menuExpanded = true },
                 )
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment     = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Box(
@@ -244,9 +262,9 @@ private fun SessionSheetItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text       = session.name,
-                        style      = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
-                        color      = if (isActive) androidx.compose.material3.MaterialTheme.colorScheme.primary
-                                     else androidx.compose.material3.MaterialTheme.colorScheme.onSurface,
+                        style      = MaterialTheme.typography.bodyMedium,
+                        color      = if (isActive) MaterialTheme.colorScheme.primary
+                                     else MaterialTheme.colorScheme.onSurface,
                         fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
                         maxLines   = 1,
                         overflow   = TextOverflow.Ellipsis,
@@ -255,15 +273,15 @@ private fun SessionSheetItem(
                         Icon(
                             imageVector        = Icons.Rounded.PushPin,
                             contentDescription = "Pinned",
-                            tint               = androidx.compose.material3.MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                            tint               = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
                             modifier           = Modifier.padding(start = 6.dp).size(12.dp),
                         )
                     }
                 }
                 Text(
                     text     = session.cwd,
-                    style    = androidx.compose.material3.MaterialTheme.typography.bodySmall,
-                    color    = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 11.sp,
@@ -273,60 +291,43 @@ private fun SessionSheetItem(
             Icon(
                 imageVector        = Icons.Rounded.Close,
                 contentDescription = "Close",
-                tint               = androidx.compose.material3.MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
                 modifier           = Modifier
                     .size(16.dp)
                     .clickable { onClose() },
             )
         }
 
-        // Context menu on long press
         DropdownMenu(
             expanded         = menuExpanded,
             onDismissRequest = { menuExpanded = false },
         ) {
             DropdownMenuItem(
-                text         = { Text("Rename") },
-                leadingIcon  = {
-                    Icon(Icons.Rounded.DriveFileRenameOutline, null, modifier = Modifier.size(18.dp))
-                },
-                onClick      = {
+                text        = { Text("Rename") },
+                leadingIcon = { Icon(Icons.Rounded.DriveFileRenameOutline, null, modifier = Modifier.size(18.dp)) },
+                onClick     = {
                     menuExpanded = false
-                    renameText = session.name
+                    renameText   = session.name
                     showRenameDialog = true
                 },
             )
             DropdownMenuItem(
-                text         = { Text(if (session.isPinned) "Unpin" else "Pin") },
-                leadingIcon  = {
-                    Icon(Icons.Rounded.PushPin, null, modifier = Modifier.size(18.dp))
-                },
-                onClick      = {
-                    menuExpanded = false
-                    onPin()
-                },
+                text        = { Text(if (session.isPinned) "Unpin" else "Pin") },
+                leadingIcon = { Icon(Icons.Rounded.PushPin, null, modifier = Modifier.size(18.dp)) },
+                onClick     = { menuExpanded = false; onPin() },
             )
             DropdownMenuItem(
-                text         = {
-                    Text("Close", color = androidx.compose.material3.MaterialTheme.colorScheme.error)
+                text        = { Text("Close", color = MaterialTheme.colorScheme.error) },
+                leadingIcon = {
+                    Icon(Icons.Rounded.Close, null,
+                        tint     = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp))
                 },
-                leadingIcon  = {
-                    Icon(
-                        Icons.Rounded.Close,
-                        null,
-                        tint     = androidx.compose.material3.MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp),
-                    )
-                },
-                onClick      = {
-                    menuExpanded = false
-                    onClose()
-                },
+                onClick     = { menuExpanded = false; onClose() },
             )
         }
     }
 
-    // Rename dialog
     if (showRenameDialog) {
         AlertDialog(
             onDismissRequest = { showRenameDialog = false },
@@ -339,13 +340,13 @@ private fun SessionSheetItem(
                     singleLine    = true,
                 )
             },
-            confirmButton    = {
+            confirmButton = {
                 TextButton(onClick = {
                     onRename(renameText)
                     showRenameDialog = false
                 }) { Text("Rename") }
             },
-            dismissButton    = {
+            dismissButton = {
                 TextButton(onClick = { showRenameDialog = false }) { Text("Cancel") }
             },
         )

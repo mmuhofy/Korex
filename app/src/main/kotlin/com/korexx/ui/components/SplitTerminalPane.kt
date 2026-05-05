@@ -1,9 +1,9 @@
 package com.korexx.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -22,11 +22,11 @@ import androidx.compose.ui.unit.dp
 import com.korexx.session.SplitScreenState
 import com.korexx.terminal.TerminalBridge
 import com.korexx.terminal.TerminalViewCompose
+import com.korexx.util.PINCH_SPLIT_THRESHOLD
 import com.korexx.util.SWIPE_THRESHOLD_PX
 
 private val DIVIDER_WIDTH = 4.dp
 
-// UNTESTED — verify before use
 @Composable
 fun SplitTerminalPane(
     splitState: SplitScreenState?,
@@ -36,11 +36,14 @@ fun SplitTerminalPane(
     onSwipeRight: () -> Unit,
     onSwipeUp: () -> Unit,
     onRatioChange: (Float) -> Unit,
+    onEnterSplit: () -> Unit,
+    onExitSplit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var totalWidth by remember { mutableFloatStateOf(0f) }
-    var hDrag      by remember { mutableFloatStateOf(0f) }
-    var vDrag      by remember { mutableFloatStateOf(0f) }
+    var totalWidth  by remember { mutableFloatStateOf(0f) }
+    var hDrag       by remember { mutableFloatStateOf(0f) }
+    var vDrag       by remember { mutableFloatStateOf(0f) }
+    var pinchSpan   by remember { mutableFloatStateOf(0f) }  // cumulative pinch delta
 
     Box(
         modifier = modifier
@@ -48,15 +51,20 @@ fun SplitTerminalPane(
             .onSizeChanged { totalWidth = it.width.toFloat() },
     ) {
         if (splitState != null && splitState.isSplit) {
-            // Split mode — two panes side by side
+            // ── Split mode — two panes side by side ──────────────────────
             Row(modifier = Modifier.fillMaxSize()) {
 
-                val primaryBridge = getBridge(splitState.primarySessionId)
                 PaneContainer(
-                    bridge   = primaryBridge,
+                    bridge   = getBridge(splitState.primarySessionId),
                     modifier = Modifier
                         .weight(splitState.splitRatio)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        // Pinch IN on primary pane → exit split
+                        .pointerInput(Unit) {
+                            detectTransformGesturesForSplit(
+                                onPinchIn = onExitSplit,
+                            )
+                        },
                 )
 
                 // Draggable divider
@@ -74,16 +82,21 @@ fun SplitTerminalPane(
                         },
                 )
 
-                val secondaryBridge = getBridge(splitState.secondarySessionId!!)
                 PaneContainer(
-                    bridge   = secondaryBridge,
+                    bridge   = getBridge(splitState.secondarySessionId!!),
                     modifier = Modifier
                         .weight(1f - splitState.splitRatio)
-                        .fillMaxHeight(),
+                        .fillMaxHeight()
+                        // Pinch IN on secondary pane → exit split
+                        .pointerInput(Unit) {
+                            detectTransformGesturesForSplit(
+                                onPinchIn = onExitSplit,
+                            )
+                        },
                 )
             }
         } else {
-            // Single pane with swipe gestures
+            // ── Single pane — swipe + pinch OUT to enter split ───────────
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -111,6 +124,12 @@ fun SplitTerminalPane(
                             onDragCancel   = { vDrag = 0f },
                             onVerticalDrag = { _, d -> vDrag += d },
                         )
+                    }
+                    // Pinch OUT → enter split
+                    .pointerInput(Unit) {
+                        detectTransformGesturesForSplit(
+                            onPinchOut = onEnterSplit,
+                        )
                     },
             ) {
                 val bridge = activeSessionId?.let { getBridge(it) }
@@ -121,6 +140,55 @@ fun SplitTerminalPane(
                         viewClient = viewClient,
                         modifier   = Modifier.fillMaxSize(),
                     )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Detects pinch gestures using two-pointer distance delta.
+ * [onPinchOut] — fingers spreading apart (enter split)
+ * [onPinchIn]  — fingers coming together (exit split)
+ *
+ * Uses raw pointer input to track two-finger span change.
+ * Fires once when threshold is crossed, resets after.
+ */
+private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTransformGesturesForSplit(
+    onPinchOut: (() -> Unit)? = null,
+    onPinchIn:  (() -> Unit)? = null,
+) {
+    var initialSpan = 0f
+    var fired       = false
+
+    awaitPointerEventScope {
+        while (true) {
+            val event = awaitPointerEvent()
+            val pointers = event.changes.filter { it.pressed }
+
+            if (pointers.size < 2) {
+                initialSpan = 0f
+                fired       = false
+                continue
+            }
+
+            val p1 = pointers[0].position
+            val p2 = pointers[1].position
+            val span = kotlin.math.sqrt(
+                (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y)
+            )
+
+            if (initialSpan == 0f) {
+                initialSpan = span
+                fired       = false
+                continue
+            }
+
+            if (!fired) {
+                val delta = span - initialSpan
+                when {
+                    delta > PINCH_SPLIT_THRESHOLD  -> { onPinchOut?.invoke(); fired = true }
+                    delta < -PINCH_SPLIT_THRESHOLD -> { onPinchIn?.invoke();  fired = true }
                 }
             }
         }
