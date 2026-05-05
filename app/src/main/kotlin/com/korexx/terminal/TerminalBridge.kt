@@ -1,4 +1,4 @@
-package com.korexx.terminal
+package com.muhofy.korex.terminal
 
 import android.content.Context
 import android.util.Log
@@ -88,14 +88,21 @@ class TerminalBridge(
          * LD_LIBRARY_PATH set so bootstrap shared libs under usr/lib are found.
          */
         fun buildEnv(context: Context): Array<String> {
-            val filesDir = context.filesDir.absolutePath
-            val prefix   = "$filesDir/usr"
+            val filesDir  = context.filesDir.absolutePath
+            val prefix    = "$filesDir/usr"
+            val nativeDir = context.applicationInfo.nativeLibraryDir
+
+            // libtermux.so is termux-exec — intercepts execve() to fix noexec issues
+            // for child processes spawned by the shell (pkg install, etc.)
+            val termuxExec = "$nativeDir/libtermux.so"
+
             return arrayOf(
                 "TERM=xterm-256color",
                 "HOME=$filesDir/home",
                 "PREFIX=$prefix",
                 "PATH=$prefix/bin:$prefix/bin/applets:/system/bin:/system/xbin",
-                "LD_LIBRARY_PATH=$prefix/lib:${context.filesDir.absolutePath}/lib",
+                "LD_LIBRARY_PATH=$prefix/lib:$nativeDir",
+                "LD_PRELOAD=$termuxExec",
                 "LANG=en_US.UTF-8",
                 "TMPDIR=$prefix/tmp",
                 "SHELL=$prefix/bin/zsh",
