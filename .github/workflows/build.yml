@@ -28,94 +28,19 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Prepare bootstrap from Termux APK
+      - name: Download pre-built bootstrap artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workflow: bootstrap.yml
+          name: bootstrap-korex-aarch64
+          path: .
+          if_no_artifact_found: fail
+
+      - name: Verify bootstrap
         run: |
-          TERMUX_APK_URL="https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3+github-debug_arm64-v8a.apk"
-
-          echo "=== Downloading Termux APK ==="
-          wget -q "$TERMUX_APK_URL" -O termux.apk
-          ls -lh termux.apk
-
-          echo "=== Extracting APK ==="
-          mkdir -p termux-apk
-          unzip -q termux.apk -d termux-apk
-
-          echo "=== APK lib contents ==="
-          ls termux-apk/lib/arm64-v8a/
-
-          # libtermux-bootstrap.so is actually the bootstrap zip embedded as a shared library
-          # Extract it directly — it's already built for com.termux with correct ELF format
-          echo "=== Extracting bootstrap zip from libtermux-bootstrap.so ==="
-
-          # The .so file IS the bootstrap zip — Termux embeds zip bytes directly into the .so
-          # We need to extract the zip payload from the .so binary
-          # Find zip magic bytes (PK\x03\x04) offset inside the .so
-          python3 - <<'PYEOF'
-          import sys
-
-          with open("termux-apk/lib/arm64-v8a/libtermux-bootstrap.so", "rb") as f:
-              data = f.read()
-
-          # Find ZIP magic (PK header)
-          zip_magic = b'PK\x03\x04'
-          offset = data.find(zip_magic)
-          if offset == -1:
-              print("ERROR: No ZIP magic found in libtermux-bootstrap.so")
-              sys.exit(1)
-
-          print(f"ZIP payload found at offset: {offset}")
-
-          with open("bootstrap-termux-original.zip", "wb") as f:
-              f.write(data[offset:])
-
-          print(f"Extracted bootstrap zip: {len(data[offset:])} bytes")
-          PYEOF
-
-          ls -lh bootstrap-termux-original.zip
-
-          echo "=== Verifying zip ==="
-          unzip -t bootstrap-termux-original.zip | tail -5
-
-          echo "=== Extracting bootstrap ==="
-          mkdir -p patched_bootstrap
-          unzip -q bootstrap-termux-original.zip -d patched_bootstrap
-
-          echo "=== Checking structure ==="
-          ls patched_bootstrap/ | head -20
-          find patched_bootstrap -name "bash" -o -name "zsh" | head -5
-
-          echo "=== Checking libandroid-support ==="
-          find patched_bootstrap -name "libandroid-support*" | head -5
-
-          # Patch com.termux → com.korexx (same byte length = 10, binary-safe)
-          echo "=== Patching package name ==="
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "text"; then
-              sed -i 's/com\.termux/com.korexx/g' "$f"
-            fi
-          done
-
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's/com\.termux/com.korexx/g' "$f" 2>/dev/null || true
-            fi
-          done
-
-          echo "✓ Patch done"
-
-          # Copy libandroid-support and other libs to usr/lib if needed
-          if [ -d "patched_bootstrap/lib" ]; then
-            mkdir -p patched_bootstrap/usr/lib
-            cp -n patched_bootstrap/lib/*.so patched_bootstrap/usr/lib/ 2>/dev/null || true
-            echo "✓ Copied /lib/*.so → usr/lib/"
-          fi
-
-          # Repack
-          echo "=== Repacking ==="
-          cd patched_bootstrap
-          zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
-          cd ..
           ls -lh bootstrap-aarch64-korex.zip
+          unzip -t bootstrap-aarch64-korex.zip | tail -3
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew

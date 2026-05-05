@@ -1,79 +1,90 @@
-name: Generate Bootstrap
+name: Build Bootstrap
 
 on:
   workflow_dispatch:
+    inputs:
+      extra_packages:
+        description: 'Extra packages to include (comma-separated, e.g. zsh,git,vim)'
+        required: false
+        default: 'zsh,git,vim,openssh'
 
 jobs:
-  generate:
+  build-bootstrap:
     runs-on: ubuntu-latest
+    timeout-minutes: 300  # 5 hours — bootstrap build is slow
 
     steps:
-      - name: Install required tools
+      - name: Checkout Korex
+        uses: actions/checkout@v4
+
+      - name: Clone termux-packages
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y curl wget jq zip unzip bzip2 xz-utils file perl
+          git clone --depth=1 https://github.com/termux/termux-packages.git
+          echo "termux-packages cloned"
 
-      - name: Get latest bootstrap release URL
-        id: get_url
+      - name: Patch properties.sh for com.korexx
         run: |
-          RESPONSE=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            https://api.github.com/repos/termux/termux-packages/releases)
+          cd termux-packages
 
-          echo "API response type: $(echo "$RESPONSE" | jq -r 'type')"
+          # Patch package name — com.termux (10 chars) → com.korexx (10 chars), same length
+          sed -i 's/TERMUX_APP__PACKAGE_NAME="com\.termux"/TERMUX_APP__PACKAGE_NAME="com.korexx"/' scripts/properties.sh
 
-          RELEASE=$(echo "$RESPONSE" \
-            | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+          # Verify patch
+          grep "TERMUX_APP__PACKAGE_NAME" scripts/properties.sh | head -3
 
-          if [ -z "$RELEASE" ] || [ "$RELEASE" = "null" ]; then
-            echo "ERROR: Could not find a bootstrap release. API response:"
-            echo "$RESPONSE" | head -50
-            exit 1
+          echo "✓ Package name patched to com.korexx"
+
+      - name: Pull Termux Docker image
+        run: |
+          docker pull termux/package-builder:latest
+          echo "✓ Docker image ready"
+
+      - name: Build bootstrap for aarch64
+        run: |
+          cd termux-packages
+
+          # Build extra packages list
+          EXTRA="${{ github.event.inputs.extra_packages }}"
+          ADD_ARGS=""
+          if [ -n "$EXTRA" ]; then
+            ADD_ARGS="--add $EXTRA"
           fi
 
-          echo "Latest release: $RELEASE"
+          echo "Building bootstrap with extra packages: $EXTRA"
 
-          URL="https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip"
-          echo "Download URL: $URL"
-          echo "url=$URL" >> $GITHUB_OUTPUT
-          echo "release=$RELEASE" >> $GITHUB_OUTPUT
+          # Run build inside Termux Docker container
+          # --architectures aarch64 — only arm64, skip other archs to save time
+          docker run --rm \
+            -v "$(pwd):/home/builder/termux-packages" \
+            -u builder \
+            termux/package-builder:latest \
+            bash -c "cd /home/builder/termux-packages && \
+              ./scripts/run-docker.sh \
+              ./scripts/build-bootstraps.sh \
+              --architectures aarch64 \
+              $ADD_ARGS"
 
-      - name: Download bootstrap zip
+          echo "✓ Bootstrap build complete"
+          ls -lh bootstrap-aarch64.zip 2>/dev/null || ls -lh *.zip
+
+      - name: Rename and verify bootstrap
         run: |
-          wget -q "${{ steps.get_url.outputs.url }}" -O bootstrap-aarch64-original.zip
-          ls -lh bootstrap-aarch64-original.zip
+          cd termux-packages
+          ZIP=$(ls bootstrap-aarch64.zip 2>/dev/null || ls bootstrap-*.zip | head -1)
+          cp "$ZIP" ../bootstrap-aarch64-korex.zip
+          ls -lh ../bootstrap-aarch64-korex.zip
 
-      - name: Patch bootstrap paths for Korex
-        run: |
-          mkdir -p patched_bootstrap
-          unzip -q bootstrap-aarch64-original.zip -d patched_bootstrap
+          # Quick verify
+          unzip -t ../bootstrap-aarch64-korex.zip | tail -3
 
-          echo "Total files: $(find patched_bootstrap -type f | wc -l)"
-
-          # Patch text files
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "text"; then
-              sed -i 's|/data/data/com\.termux|/data/data/com.korexx|g' "$f"
-            fi
-          done
-
-          # Patch ELF binaries with perl (handles binary strings)
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.korexx/|g' "$f" 2>/dev/null || true
-            fi
-          done
-
-          # Repack
-          cd patched_bootstrap
-          zip -r9 ../bootstrap-aarch64.zip .
-          cd ..
-          ls -lh bootstrap-aarch64.zip
+          # Confirm com.korexx is in the zip
+          echo "=== Checking package name in bootstrap ==="
+          unzip -p ../bootstrap-aarch64-korex.zip SYMLINKS.txt | grep -c "korexx" || true
+          unzip -p ../bootstrap-aarch64-korex.zip SYMLINKS.txt | grep "korexx" | head -5
 
       - name: Upload bootstrap artifact
         uses: actions/upload-artifact@v4
         with:
           name: bootstrap-korex-aarch64
-          path: bootstrap-aarch64.zip
+          path: bootstrap-aarch64-korex.zip
           retention-days: 90
