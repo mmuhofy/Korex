@@ -8,7 +8,7 @@ extern uint8_t _binary_bootstrap_zip_start[];
 extern uint8_t _binary_bootstrap_zip_end[];
 
 JNIEXPORT jbyteArray JNICALL
-Java_com_muhofy_korex_terminal_BootstrapInstaller_getZip(
+Java_com_korexx_terminal_BootstrapInstaller_getZip(
         JNIEnv *env, jclass clazz) {
     size_t size = _binary_bootstrap_zip_end - _binary_bootstrap_zip_start;
     jbyteArray result = (*env)->NewByteArray(env, (jsize) size);
