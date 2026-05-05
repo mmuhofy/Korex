@@ -54,14 +54,14 @@ jobs:
           # Patch text files
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "text"; then
-              sed -i 's|/data/data/com\.termux|/data/data/com.muhofy.korex|g' "$f"
+              sed -i 's|/data/data/com\.termux|/data/data/com.korexx|g' "$f"
             fi
           done
 
           # Patch ELF binaries with perl (handles binary strings)
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.muhofy.korex/|g' "$f" 2>/dev/null || true
+              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.korexx/|g' "$f" 2>/dev/null || true
             fi
           done
 

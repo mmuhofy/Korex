@@ -47,6 +47,10 @@ jobs:
 
           echo "Bootstrap release: $RELEASE"
 
+          # Check available assets for this release
+          echo "=== Available bootstrap assets ==="
+          echo "$RESPONSE" | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .assets[].name'
+
           wget -q "https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip" \
             -O bootstrap-aarch64-original.zip
 
@@ -57,13 +61,13 @@ jobs:
           # --- Patch paths for Korex ---
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "text"; then
-              sed -i 's|/data/data/com\.termux|/data/data/com.muhofy.korex|g' "$f"
+              sed -i 's|/data/data/com\.termux|/data/data/com.korexx|g' "$f"
             fi
           done
 
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.muhofy.korex/|g' "$f" 2>/dev/null || true
+              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.korexx/|g' "$f" 2>/dev/null || true
             fi
           done
 

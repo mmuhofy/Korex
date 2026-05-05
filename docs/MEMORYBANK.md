@@ -136,7 +136,7 @@ Dark default. Theme marketplace in Phase 2.
 ## Project Structure
 
 ```
-com.muhofy.korex/
+com.korexx/
 ├── data/         — Room DAOs, repository implementations, models
 ├── domain/       — use cases, repository interfaces, business logic
 ├── ui/           — Compose screens, components, ViewModels
