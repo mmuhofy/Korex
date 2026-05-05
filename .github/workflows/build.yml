@@ -28,77 +28,90 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Download and prepare bootstrap
+      - name: Prepare bootstrap from Termux APK
         run: |
-          RESPONSE=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/termux/termux-packages/releases)
+          TERMUX_APK_URL="https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3+github-debug_arm64-v8a.apk"
 
-          RELEASE=$(echo "$RESPONSE" \
-            | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
+          echo "=== Downloading Termux APK ==="
+          wget -q "$TERMUX_APK_URL" -O termux.apk
+          ls -lh termux.apk
 
-          if [ -z "$RELEASE" ] || [ "$RELEASE" = "null" ]; then
-            echo "ERROR: Could not find bootstrap release"
-            echo "$RESPONSE" | head -50
-            exit 1
-          fi
+          echo "=== Extracting APK ==="
+          mkdir -p termux-apk
+          unzip -q termux.apk -d termux-apk
 
-          echo "Bootstrap release: $RELEASE"
+          echo "=== APK lib contents ==="
+          ls termux-apk/lib/arm64-v8a/
 
-          # Check available assets for this release
-          echo "=== Available bootstrap assets ==="
-          echo "$RESPONSE" | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .assets[].name'
+          # libtermux-bootstrap.so is actually the bootstrap zip embedded as a shared library
+          # Extract it directly — it's already built for com.termux with correct ELF format
+          echo "=== Extracting bootstrap zip from libtermux-bootstrap.so ==="
 
-          wget -q "https://github.com/termux/termux-packages/releases/download/${RELEASE}/bootstrap-aarch64.zip" \
-            -O bootstrap-aarch64-original.zip
+          # The .so file IS the bootstrap zip — Termux embeds zip bytes directly into the .so
+          # We need to extract the zip payload from the .so binary
+          # Find zip magic bytes (PK\x03\x04) offset inside the .so
+          python3 - <<'PYEOF'
+          import sys
 
-          # --- Extract bootstrap zip ---
+          with open("termux-apk/lib/arm64-v8a/libtermux-bootstrap.so", "rb") as f:
+              data = f.read()
+
+          # Find ZIP magic (PK header)
+          zip_magic = b'PK\x03\x04'
+          offset = data.find(zip_magic)
+          if offset == -1:
+              print("ERROR: No ZIP magic found in libtermux-bootstrap.so")
+              sys.exit(1)
+
+          print(f"ZIP payload found at offset: {offset}")
+
+          with open("bootstrap-termux-original.zip", "wb") as f:
+              f.write(data[offset:])
+
+          print(f"Extracted bootstrap zip: {len(data[offset:])} bytes")
+          PYEOF
+
+          ls -lh bootstrap-termux-original.zip
+
+          echo "=== Verifying zip ==="
+          unzip -t bootstrap-termux-original.zip | tail -5
+
+          echo "=== Extracting bootstrap ==="
           mkdir -p patched_bootstrap
-          unzip -q bootstrap-aarch64-original.zip -d patched_bootstrap
+          unzip -q bootstrap-termux-original.zip -d patched_bootstrap
 
-          # --- Patch paths for Korex ---
+          echo "=== Checking structure ==="
+          ls patched_bootstrap/ | head -20
+          find patched_bootstrap -name "bash" -o -name "zsh" | head -5
+
+          echo "=== Checking libandroid-support ==="
+          find patched_bootstrap -name "libandroid-support*" | head -5
+
+          # Patch com.termux → com.korexx (same byte length = 10, binary-safe)
+          echo "=== Patching package name ==="
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "text"; then
-              sed -i 's|/data/data/com\.termux|/data/data/com.korexx|g' "$f"
+              sed -i 's/com\.termux/com.korexx/g' "$f"
             fi
           done
 
           find patched_bootstrap -type f | while read f; do
             if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's|/data/data/com\.termux/|/data/data/com.korexx/|g' "$f" 2>/dev/null || true
+              perl -pi -e 's/com\.termux/com.korexx/g' "$f" 2>/dev/null || true
             fi
           done
 
-          echo "=== Checking libandroid-support ==="
-          find patched_bootstrap -name "libandroid-support*" 2>/dev/null || echo "NOT FOUND"
-          echo "=== libs in usr/lib ==="
-          ls patched_bootstrap/usr/lib/ 2>/dev/null | head -20 || echo "usr/lib not found"
+          echo "✓ Patch done"
 
-          # libandroid-support.so lives in /lib not /usr/lib in the bootstrap zip.
-          # Copy it to usr/lib so bash/zsh can find it at runtime via LD_LIBRARY_PATH.
+          # Copy libandroid-support and other libs to usr/lib if needed
           if [ -d "patched_bootstrap/lib" ]; then
             mkdir -p patched_bootstrap/usr/lib
             cp -n patched_bootstrap/lib/*.so patched_bootstrap/usr/lib/ 2>/dev/null || true
             echo "✓ Copied /lib/*.so → usr/lib/"
           fi
 
-          # --- Run termux-elf-cleaner on all ELF binaries ---
-          # Bootstrap binaries contain ELF entries unsupported by older Android linkers.
-          # termux-elf-cleaner strips DT_HASH/DT_GNU_HASH issues and unused DT entries.
-          curl -sL https://github.com/termux/termux-elf-cleaner/releases/latest/download/termux-elf-cleaner \
-            -o termux-elf-cleaner
-          chmod +x termux-elf-cleaner
-
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "ELF"; then
-              ./termux-elf-cleaner "$f" 2>/dev/null || true
-            fi
-          done
-          echo "✓ ELF cleaning done"
-
-          # --- Repack patched bootstrap zip (for JNI embed) ---
+          # Repack
+          echo "=== Repacking ==="
           cd patched_bootstrap
           zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
           cd ..
