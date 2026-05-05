@@ -67,6 +67,25 @@ jobs:
             fi
           done
 
+          echo "=== Checking libandroid-support ==="
+          find patched_bootstrap -name "libandroid-support*" 2>/dev/null || echo "NOT FOUND"
+          echo "=== libs in usr/lib ==="
+          ls patched_bootstrap/usr/lib/ 2>/dev/null | head -20 || echo "usr/lib not found"
+
+          # --- Run termux-elf-cleaner on all ELF binaries ---
+          # Bootstrap binaries contain ELF entries unsupported by older Android linkers.
+          # termux-elf-cleaner strips DT_HASH/DT_GNU_HASH issues and unused DT entries.
+          curl -sL https://github.com/termux/termux-elf-cleaner/releases/latest/download/termux-elf-cleaner \
+            -o termux-elf-cleaner
+          chmod +x termux-elf-cleaner
+
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "ELF"; then
+              ./termux-elf-cleaner "$f" 2>/dev/null || true
+            fi
+          done
+          echo "✓ ELF cleaning done"
+
           # --- Repack patched bootstrap zip (for JNI embed) ---
           cd patched_bootstrap
           zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
