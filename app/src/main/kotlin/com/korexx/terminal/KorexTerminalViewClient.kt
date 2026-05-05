@@ -1,8 +1,5 @@
 package com.korexx.terminal
 
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
 import com.termux.terminal.TerminalSession
@@ -11,7 +8,6 @@ import com.termux.view.TerminalViewClient
 
 class KorexTerminalViewClient(
     private val bridge: TerminalBridge,
-    private val context: Context,
 ) : TerminalViewClient {
 
     var terminalView: TerminalView? = null
@@ -25,13 +21,9 @@ class KorexTerminalViewClient(
     // Long press → copy selected text to clipboard
     override fun onLongPress(event: MotionEvent?): Boolean {
         val view = terminalView ?: return false
-        val selectedText = view.mEmulator?.selectedText ?: return false
-        if (selectedText.isBlank()) return false
-
-        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("Korex", selectedText))
-        view.stopTextSelectionMode()
-        return true
+        // TerminalView handles text selection internally on long press
+        // We return false to let the default Termux copy mode activate
+        return false
     }
 
     override fun onSingleTapUp(e: MotionEvent?) {}

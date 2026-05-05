@@ -1,4 +1,4 @@
-package com.muhofy.korex.terminal
+package com.korexx.terminal
 
 import android.content.Context
 import android.util.Log
@@ -57,43 +57,27 @@ class TerminalBridge(
 
         private const val SHELL_FALLBACK = "/system/bin/sh"
 
-        /**
-         * Resolves shell from bootstrap prefix.
-         * targetSdk 28 allows execve() from filesDir — no tricks needed.
-         * Priority: zsh → bash → system sh
-         */
         fun resolveShellPath(context: Context): String {
             val binDir = File(context.filesDir, "usr/bin")
             val zsh    = File(binDir, "zsh")
             val bash   = File(binDir, "bash")
 
             return when {
-                zsh.exists()  -> zsh.absolutePath.also {
-                    Log.i(TAG, "Shell: zsh ($it)")
-                }
-                bash.exists() -> bash.absolutePath.also {
-                    Log.i(TAG, "Shell: bash ($it)")
-                }
-                else -> SHELL_FALLBACK.also {
-                    Log.w(TAG, "Shell: system sh fallback — bootstrap not installed")
-                }
+                zsh.exists()  -> zsh.absolutePath.also { Log.i(TAG, "Shell: zsh ($it)") }
+                bash.exists() -> bash.absolutePath.also { Log.i(TAG, "Shell: bash ($it)") }
+                else          -> SHELL_FALLBACK.also { Log.w(TAG, "Shell: system sh fallback") }
             }
         }
 
         fun prefixDir(context: Context): File = File(context.filesDir, "usr")
         fun homeDir(context: Context): File   = File(context.filesDir, "home")
 
-        /**
-         * Environment for the pty process.
-         * LD_LIBRARY_PATH set so bootstrap shared libs under usr/lib are found.
-         */
         fun buildEnv(context: Context): Array<String> {
             val filesDir  = context.filesDir.absolutePath
             val prefix    = "$filesDir/usr"
             val nativeDir = context.applicationInfo.nativeLibraryDir
 
-            // libtermux.so is termux-exec — intercepts execve() to fix noexec issues
-            // for child processes spawned by the shell (pkg install, etc.)
+            // libtermux.so = termux-exec, intercepts execve() for child processes
             val termuxExec = "$nativeDir/libtermux.so"
 
             return arrayOf(
