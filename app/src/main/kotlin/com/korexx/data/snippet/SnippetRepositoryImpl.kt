@@ -10,6 +10,8 @@ class SnippetRepositoryImpl @Inject constructor(
 
     override fun observeAll(): Flow<List<SnippetEntity>> = dao.observeAll()
 
+    override suspend fun getAll(): List<SnippetEntity> = dao.getAll()
+
     override suspend fun insert(snippet: SnippetEntity) = dao.insert(snippet)
 
     override suspend fun update(snippet: SnippetEntity) = dao.update(snippet)

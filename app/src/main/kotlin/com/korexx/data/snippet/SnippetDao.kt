@@ -9,9 +9,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface SnippetDao {
-
-    @Query("SELECT * FROM snippets ORDER BY createdAt DESC")
+    @Query("SELECT * FROM snippets ORDER BY createdAt ASC")
     fun observeAll(): Flow<List<SnippetEntity>>
+
+    @Query("SELECT * FROM snippets ORDER BY createdAt ASC")
+    suspend fun getAll(): List<SnippetEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(snippet: SnippetEntity)
