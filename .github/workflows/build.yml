@@ -72,6 +72,14 @@ jobs:
           echo "=== libs in usr/lib ==="
           ls patched_bootstrap/usr/lib/ 2>/dev/null | head -20 || echo "usr/lib not found"
 
+          # libandroid-support.so lives in /lib not /usr/lib in the bootstrap zip.
+          # Copy it to usr/lib so bash/zsh can find it at runtime via LD_LIBRARY_PATH.
+          if [ -d "patched_bootstrap/lib" ]; then
+            mkdir -p patched_bootstrap/usr/lib
+            cp -n patched_bootstrap/lib/*.so patched_bootstrap/usr/lib/ 2>/dev/null || true
+            echo "✓ Copied /lib/*.so → usr/lib/"
+          fi
+
           # --- Run termux-elf-cleaner on all ELF binaries ---
           # Bootstrap binaries contain ELF entries unsupported by older Android linkers.
           # termux-elf-cleaner strips DT_HASH/DT_GNU_HASH issues and unused DT entries.

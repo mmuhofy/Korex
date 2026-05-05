@@ -95,7 +95,7 @@ class TerminalBridge(
                 "HOME=$filesDir/home",
                 "PREFIX=$prefix",
                 "PATH=$prefix/bin:$prefix/bin/applets:/system/bin:/system/xbin",
-                "LD_LIBRARY_PATH=$prefix/lib",
+                "LD_LIBRARY_PATH=$prefix/lib:${context.filesDir.absolutePath}/lib",
                 "LANG=en_US.UTF-8",
                 "TMPDIR=$prefix/tmp",
                 "SHELL=$prefix/bin/zsh",
