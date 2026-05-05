@@ -67,41 +67,6 @@ jobs:
             fi
           done
 
-          # --- Extract shell binaries → jniLibs (noexec bypass) ---
-          # These are placed in nativeLibraryDir by Android at install time,
-          # which is always exec-able regardless of targetSdkVersion.
-          JNILIBS_DIR="app/src/main/jniLibs/arm64-v8a"
-          mkdir -p "$JNILIBS_DIR"
-
-          # Debug — show zip structure to find correct paths
-          echo "=== Bootstrap zip contents (bin/) ==="
-          find patched_bootstrap -name "bash" -o -name "zsh" 2>/dev/null
-          echo "=== All files in usr/bin ==="
-          ls patched_bootstrap/usr/bin/ 2>/dev/null || echo "usr/bin not found"
-          echo "================================"
-
-          # bash — primary shell entry point
-          BASH_PATH=$(find patched_bootstrap -name "bash" -type f | head -1)
-          if [ -n "$BASH_PATH" ]; then
-            cp "$BASH_PATH" "$JNILIBS_DIR/libkorex-bash.so"
-            echo "✓ libkorex-bash.so extracted from $BASH_PATH ($(du -sh "$JNILIBS_DIR/libkorex-bash.so" | cut -f1))"
-          else
-            echo "ERROR: bash not found anywhere in bootstrap"
-            find patched_bootstrap -type f | head -30
-            exit 1
-          fi
-
-          # zsh — preferred shell
-          ZSH_PATH=$(find patched_bootstrap -name "zsh" -type f | head -1)
-          if [ -n "$ZSH_PATH" ]; then
-            cp "$ZSH_PATH" "$JNILIBS_DIR/libkorex-zsh.so"
-            echo "✓ libkorex-zsh.so extracted from $ZSH_PATH ($(du -sh "$JNILIBS_DIR/libkorex-zsh.so" | cut -f1))"
-          else
-            echo "WARNING: zsh not found in bootstrap, skipping"
-          fi
-
-          ls -lh "$JNILIBS_DIR/"
-
           # --- Repack patched bootstrap zip (for JNI embed) ---
           cd patched_bootstrap
           zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null

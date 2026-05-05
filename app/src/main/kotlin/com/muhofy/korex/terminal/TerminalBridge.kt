@@ -4,8 +4,8 @@ import android.content.Context
 import android.util.Log
 import com.termux.terminal.TerminalSession
 import com.muhofy.korex.util.TERMINAL_FONT_SIZE_DEFAULT
-import com.muhofy.korex.util.TERMINAL_FONT_SIZE_MIN
 import com.muhofy.korex.util.TERMINAL_FONT_SIZE_MAX
+import com.muhofy.korex.util.TERMINAL_FONT_SIZE_MIN
 import com.muhofy.korex.util.TERMINAL_TRANSCRIPT_ROWS
 import java.io.File
 
@@ -15,12 +15,9 @@ private const val TAG = "TerminalBridge"
  * Creates and owns a single TerminalSession (pty process).
  * One TerminalBridge per Korex session.
  *
- * SHELL RESOLUTION — noexec bypass:
- * Android API 29+ mounts filesDir as noexec — execve() on binaries there fails.
- * Shell binaries (bash, zsh) are shipped as libkorex-*.so inside jniLibs/.
- * Android extracts these to nativeLibraryDir at install time, which is always
- * exec-able. We resolve the shell from there — no /proc/self/fd tricks needed.
- *
+ * SHELL RESOLUTION:
+ * targetSdkVersion = 28 allows execve() from filesDir on Android 9 compat mode.
+ * Shell binaries live in filesDir/usr/bin/ after bootstrap installation.
  * Priority: zsh → bash → /system/bin/sh
  */
 class TerminalBridge(
@@ -30,7 +27,7 @@ class TerminalBridge(
 
     val session: TerminalSession = TerminalSession(
         /* shellPath      */ resolveShellPath(context),
-        /* cwd            */ homDir(context).also { it.mkdirs() }.absolutePath,
+        /* cwd            */ homeDir(context).also { it.mkdirs() }.absolutePath,
         /* args           */ emptyArray(),
         /* env            */ buildEnv(context),
         /* transcriptRows */ TERMINAL_TRANSCRIPT_ROWS,
@@ -61,56 +58,47 @@ class TerminalBridge(
         private const val SHELL_FALLBACK = "/system/bin/sh"
 
         /**
-         * Resolves the shell binary path from nativeLibraryDir.
-         * Binaries are shipped as libkorex-*.so in jniLibs/ and extracted
-         * by Android to nativeLibraryDir at install time (always exec-able).
-         *
+         * Resolves shell from bootstrap prefix.
+         * targetSdk 28 allows execve() from filesDir — no tricks needed.
          * Priority: zsh → bash → system sh
          */
         fun resolveShellPath(context: Context): String {
-            val nativeDir = context.applicationInfo.nativeLibraryDir
-
-            val zsh  = File(nativeDir, "libkorex-zsh.so")
-            val bash = File(nativeDir, "libkorex-bash.so")
+            val binDir = File(context.filesDir, "usr/bin")
+            val zsh    = File(binDir, "zsh")
+            val bash   = File(binDir, "bash")
 
             return when {
-                zsh.exists()  -> {
-                    Log.i(TAG, "Shell: zsh (${zsh.absolutePath})")
-                    zsh.absolutePath
+                zsh.exists()  -> zsh.absolutePath.also {
+                    Log.i(TAG, "Shell: zsh ($it)")
                 }
-                bash.exists() -> {
-                    Log.i(TAG, "Shell: bash (${bash.absolutePath})")
-                    bash.absolutePath
+                bash.exists() -> bash.absolutePath.also {
+                    Log.i(TAG, "Shell: bash ($it)")
                 }
-                else -> {
-                    Log.w(TAG, "Shell: system sh fallback — zsh/bash not found in nativeLibraryDir")
-                    SHELL_FALLBACK
+                else -> SHELL_FALLBACK.also {
+                    Log.w(TAG, "Shell: system sh fallback — bootstrap not installed")
                 }
             }
         }
 
         fun prefixDir(context: Context): File = File(context.filesDir, "usr")
-        fun homDir(context: Context): File    = File(context.filesDir, "home")
+        fun homeDir(context: Context): File   = File(context.filesDir, "home")
 
         /**
          * Environment for the pty process.
-         * LD_LIBRARY_PATH is set so zsh/bash can find their shared libs
-         * under filesDir/usr/lib at runtime.
+         * LD_LIBRARY_PATH set so bootstrap shared libs under usr/lib are found.
          */
         fun buildEnv(context: Context): Array<String> {
-            val filesDir  = context.filesDir.absolutePath
-            val prefix    = "$filesDir/usr"
-            val nativeDir = context.applicationInfo.nativeLibraryDir
+            val filesDir = context.filesDir.absolutePath
+            val prefix   = "$filesDir/usr"
             return arrayOf(
                 "TERM=xterm-256color",
                 "HOME=$filesDir/home",
                 "PREFIX=$prefix",
                 "PATH=$prefix/bin:$prefix/bin/applets:/system/bin:/system/xbin",
-                "LD_LIBRARY_PATH=$prefix/lib:$nativeDir",
+                "LD_LIBRARY_PATH=$prefix/lib",
                 "LANG=en_US.UTF-8",
                 "TMPDIR=$prefix/tmp",
-                "SHELL=${resolveShellPath(context.applicationContext)
-                    .let { if (it == SHELL_FALLBACK) it else it }}",
+                "SHELL=$prefix/bin/zsh",
             )
         }
     }
