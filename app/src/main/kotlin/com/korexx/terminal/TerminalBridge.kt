@@ -90,6 +90,10 @@ class TerminalBridge(
                 "LANG=en_US.UTF-8",
                 "TMPDIR=$prefix/tmp",
                 "SHELL=$prefix/bin/zsh",
+                // Required by termux-exec to intercept and rewrite com.termux paths
+                "TERMUX_APP_DATA_DIR=$filesDir",
+                "TERMUX_ROOTFS=$filesDir",
+                "TERMUX_PREFIX=$prefix",
             )
         }
     }
