@@ -8,7 +8,7 @@ plugins {
 
 android {
     namespace   = "com.muhofy.korex"
-    compileSdk  = 28
+    compileSdk  = 35
 
     defaultConfig {
         applicationId   = "com.muhofy.korex"
