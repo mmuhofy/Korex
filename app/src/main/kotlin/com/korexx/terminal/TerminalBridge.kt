@@ -84,16 +84,14 @@ class TerminalBridge(
             }
 
             return arrayOf(
-                // Bind com.termux paths → com.korexx
-                // dpkg/pkg syscalls to com.termux are rewritten to com.korexx
-                "-b", "$filesDir:/data/data/com.termux/files",
-                "-b", "$filesDir:/data/user/0/com.termux/files",
-                // Bind essential system paths
+                // Bind com.termux paths → com.korexx so dpkg/pkg syscalls work
+                "-b", "/data/data/com.korexx:/data/data/com.termux",
+                "-b", "/data/user/0/com.korexx:/data/user/0/com.termux",
+                // Essential system bindings
                 "-b", "/proc",
                 "-b", "/dev",
                 "-b", "/sys",
                 "-b", "/system",
-                "-b", "/vendor",
                 // Working dir
                 "--cwd", "$filesDir/home",
                 // Shell
