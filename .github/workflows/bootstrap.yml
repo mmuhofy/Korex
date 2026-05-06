@@ -59,7 +59,6 @@ jobs:
             -u builder \
             termux/package-builder:latest \
             bash -c "cd /home/builder/termux-packages && \
-              ./scripts/run-docker.sh \
               ./scripts/build-bootstraps.sh \
               --architectures aarch64 \
               $ADD_ARGS"
