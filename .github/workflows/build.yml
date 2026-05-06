@@ -109,10 +109,10 @@ jobs:
 
             PROOT_BIN=$(find proot_extract -name "proot" -type f | head -1)
             if [ -n "$PROOT_BIN" ]; then
-              mkdir -p patched_bootstrap/usr/bin
-              cp "$PROOT_BIN" patched_bootstrap/usr/bin/proot
-              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/usr/bin/proot 2>/dev/null || true
-              chmod +x patched_bootstrap/usr/bin/proot
+              mkdir -p patched_bootstrap/bin
+              cp "$PROOT_BIN" patched_bootstrap/bin/proot
+              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/bin/proot 2>/dev/null || true
+              chmod +x patched_bootstrap/bin/proot
               echo "✓ proot injected"
             else
               echo "WARNING: proot binary not found in .deb"
