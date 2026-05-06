@@ -116,24 +116,35 @@ jobs:
               echo "✓ proot injected"
 
               # Download and inject libtalloc — required by proot
-              wget -q "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/libtalloc_2.4.2-1_aarch64.deb" \
-                -O libtalloc.deb 2>/dev/null || true
+              echo "=== Finding libtalloc ==="
+              curl -s "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/" | grep -o 'libtalloc_[^"]*_aarch64\.deb' | tail -1
 
-              if [ -s libtalloc.deb ]; then
+              TALLOC_DEB=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/" \
+                | grep -o 'libtalloc_[^"]*_aarch64\.deb' | tail -1)
+
+              echo "libtalloc deb: $TALLOC_DEB"
+
+              if [ -n "$TALLOC_DEB" ]; then
+                wget -q "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/$TALLOC_DEB" \
+                  -O libtalloc.deb
+                ls -lh libtalloc.deb
+
                 mkdir -p libtalloc_extract
                 cd libtalloc_extract
                 ar x ../libtalloc.deb
                 tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
                 cd ..
+
                 TALLOC_LIB=$(find libtalloc_extract -name "libtalloc.so*" -type f | head -1)
                 if [ -n "$TALLOC_LIB" ]; then
                   cp "$TALLOC_LIB" patched_bootstrap/lib/libtalloc.so.2
                   echo "✓ libtalloc.so.2 injected"
                 else
-                  echo "WARNING: libtalloc not found in .deb"
+                  echo "WARNING: libtalloc lib not found in .deb"
+                  find libtalloc_extract -type f | head -10
                 fi
               else
-                echo "WARNING: libtalloc.deb download failed"
+                echo "WARNING: libtalloc deb not found on server"
               fi
             else
               echo "WARNING: proot binary not found in .deb"
