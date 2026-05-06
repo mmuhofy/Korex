@@ -114,6 +114,27 @@ jobs:
               perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/bin/proot 2>/dev/null || true
               chmod +x patched_bootstrap/bin/proot
               echo "✓ proot injected"
+
+              # Download and inject libtalloc — required by proot
+              wget -q "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/libtalloc_2.4.2-1_aarch64.deb" \
+                -O libtalloc.deb 2>/dev/null || true
+
+              if [ -s libtalloc.deb ]; then
+                mkdir -p libtalloc_extract
+                cd libtalloc_extract
+                ar x ../libtalloc.deb
+                tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
+                cd ..
+                TALLOC_LIB=$(find libtalloc_extract -name "libtalloc.so*" -type f | head -1)
+                if [ -n "$TALLOC_LIB" ]; then
+                  cp "$TALLOC_LIB" patched_bootstrap/lib/libtalloc.so.2
+                  echo "✓ libtalloc.so.2 injected"
+                else
+                  echo "WARNING: libtalloc not found in .deb"
+                fi
+              else
+                echo "WARNING: libtalloc.deb download failed"
+              fi
             else
               echo "WARNING: proot binary not found in .deb"
             fi
