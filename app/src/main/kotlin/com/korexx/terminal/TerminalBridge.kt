@@ -59,45 +59,16 @@ class TerminalBridge(
 
         fun resolveShellPath(context: Context): String {
             val binDir = File(context.filesDir, "usr/bin")
-            val proot  = File(binDir, "proot")
-            return if (proot.exists()) {
-                proot.absolutePath.also { Log.i(TAG, "Shell: proot ($it)") }
-            } else {
-                val zsh  = File(binDir, "zsh")
-                val bash = File(binDir, "bash")
-                when {
-                    zsh.exists()  -> zsh.absolutePath.also  { Log.i(TAG, "Shell: zsh ($it)") }
-                    bash.exists() -> bash.absolutePath.also { Log.i(TAG, "Shell: bash ($it)") }
-                    else          -> SHELL_FALLBACK.also    { Log.w(TAG, "Shell: system sh fallback") }
-                }
+            val zsh    = File(binDir, "zsh")
+            val bash   = File(binDir, "bash")
+            return when {
+                zsh.exists()  -> zsh.absolutePath.also  { Log.i(TAG, "Shell: zsh ($it)") }
+                bash.exists() -> bash.absolutePath.also { Log.i(TAG, "Shell: bash ($it)") }
+                else          -> SHELL_FALLBACK.also    { Log.w(TAG, "Shell: system sh fallback") }
             }
         }
 
-        fun resolveShellArgs(context: Context): Array<String> {
-            val filesDir = context.filesDir.absolutePath
-            val prefix   = "$filesDir/usr"
-            val proot    = File("$prefix/bin/proot")
-            if (!proot.exists()) return emptyArray()
-
-            val shell = File("$prefix/bin/zsh").let {
-                if (it.exists()) it.absolutePath else "$prefix/bin/bash"
-            }
-
-            return arrayOf(
-                // Bind com.termux paths → com.korexx so dpkg/pkg syscalls work
-                "-b", "/data/data/com.korexx:/data/data/com.termux",
-                "-b", "/data/user/0/com.korexx:/data/user/0/com.termux",
-                // Essential system bindings
-                "-b", "/proc",
-                "-b", "/dev",
-                "-b", "/sys",
-                "-b", "/system",
-                // Working dir
-                "--cwd", "$filesDir/home",
-                // Shell
-                shell,
-            )
-        }
+        fun resolveShellArgs(context: Context): Array<String> = emptyArray()
 
         fun prefixDir(context: Context): File = File(context.filesDir, "usr")
         fun homeDir(context: Context): File   = File(context.filesDir, "home")
