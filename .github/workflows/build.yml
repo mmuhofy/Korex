@@ -28,81 +28,105 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Download pre-built bootstrap artifact
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          workflow: bootstrap.yml
-          name: bootstrap-korex-aarch64
-          path: .
-          if_no_artifact_found: fail
-
-      - name: Verify bootstrap
+      - name: Prepare bootstrap from Termux APK
         run: |
+          TERMUX_APK_URL="https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3+github-debug_arm64-v8a.apk"
+
+          echo "=== Downloading Termux APK ==="
+          wget -q "$TERMUX_APK_URL" -O termux.apk
+          ls -lh termux.apk
+
+          echo "=== Extracting APK ==="
+          mkdir -p termux-apk
+          unzip -q termux.apk -d termux-apk
+
+          echo "=== APK lib contents ==="
+          ls termux-apk/lib/arm64-v8a/
+
+          # Extract bootstrap zip from libtermux-bootstrap.so
+          python3 - <<'PYEOF'
+          import sys
+          with open("termux-apk/lib/arm64-v8a/libtermux-bootstrap.so", "rb") as f:
+              data = f.read()
+          zip_magic = b'PK\x03\x04'
+          offset = data.find(zip_magic)
+          if offset == -1:
+              print("ERROR: No ZIP magic found")
+              sys.exit(1)
+          print(f"ZIP payload at offset: {offset}")
+          with open("bootstrap-termux-original.zip", "wb") as f:
+              f.write(data[offset:])
+          print(f"Extracted {len(data[offset:])} bytes")
+          PYEOF
+
+          echo "=== Extracting bootstrap ==="
+          mkdir -p patched_bootstrap
+          unzip -q bootstrap-termux-original.zip -d patched_bootstrap
+
+          echo "=== Checking structure ==="
+          ls patched_bootstrap/
+          find patched_bootstrap -name "proot" | head -3
+
+          # Patch com.termux → com.korexx (same byte length = 10, binary-safe)
+          echo "=== Patching package name ==="
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "text"; then
+              sed -i 's/com\.termux/com.korexx/g' "$f"
+            fi
+          done
+          find patched_bootstrap -type f | while read f; do
+            if file "$f" | grep -q "ELF"; then
+              perl -pi -e 's/com\.termux/com.korexx/g' "$f" 2>/dev/null || true
+            fi
+          done
+          echo "✓ Patch done"
+
+          # Copy libs to usr/lib
+          if [ -d "patched_bootstrap/lib" ]; then
+            mkdir -p patched_bootstrap/usr/lib
+            cp -n patched_bootstrap/lib/*.so patched_bootstrap/usr/lib/ 2>/dev/null || true
+            echo "✓ Copied /lib/*.so → usr/lib/"
+          fi
+
+          # Inject proot if not present
+          if [ ! -f "patched_bootstrap/bin/proot" ]; then
+            echo "=== proot not found, downloading ==="
+            wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.4.0-1_aarch64.deb" \
+              -O proot.deb 2>/dev/null || true
+
+            if [ ! -s proot.deb ]; then
+              # Try to find latest proot deb
+              PROOT_URL=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/" \
+                | grep -o 'proot_[^"]*_aarch64\.deb' | tail -1)
+              wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/$PROOT_URL" -O proot.deb
+            fi
+
+            mkdir -p proot_extract
+            cd proot_extract
+            ar x ../proot.deb
+            tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
+            cd ..
+
+            PROOT_BIN=$(find proot_extract -name "proot" -type f | head -1)
+            if [ -n "$PROOT_BIN" ]; then
+              mkdir -p patched_bootstrap/usr/bin
+              cp "$PROOT_BIN" patched_bootstrap/usr/bin/proot
+              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/usr/bin/proot 2>/dev/null || true
+              chmod +x patched_bootstrap/usr/bin/proot
+              echo "✓ proot injected"
+            else
+              echo "WARNING: proot binary not found in .deb"
+            fi
+          else
+            echo "✓ proot already present"
+          fi
+
+          # Repack
+          echo "=== Repacking ==="
+          cd patched_bootstrap
+          zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
+          cd ..
           ls -lh bootstrap-aarch64-korex.zip
-          unzip -t bootstrap-aarch64-korex.zip | tail -3
-
-      - name: Inject proot into bootstrap
-        run: |
-          # Check if proot already in bootstrap
-          if unzip -l bootstrap-aarch64-korex.zip | grep -q "bin/proot"; then
-            echo "✓ proot already in bootstrap, skipping"
-            exit 0
-          fi
-
-          echo "proot not found in bootstrap, downloading..."
-
-          # Download proot .deb from Termux packages
-          RESPONSE=$(curl -s \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/termux/termux-packages/releases)
-
-          RELEASE=$(echo "$RESPONSE" \
-            | jq -r '[.[] | select(type == "object") | select(.tag_name != null) | select(.tag_name | startswith("bootstrap-"))] | first | .tag_name')
-
-          echo "Release: $RELEASE"
-
-          # Download proot deb
-          wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.4.0-1_aarch64.deb" \
-            -O proot.deb || \
-          wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/" \
-            -O proot_index.html && \
-          PROOT_DEB=$(grep -o 'proot_[^"]*_aarch64\.deb' proot_index.html | head -1) && \
-          wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/$PROOT_DEB" -O proot.deb
-
-          ls -lh proot.deb
-
-          # Extract proot binary from .deb
-          mkdir -p proot_extract
-          cd proot_extract
-          ar x ../proot.deb
-          tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
-          cd ..
-
-          PROOT_BIN=$(find proot_extract -name "proot" -type f | head -1)
-          echo "Found proot at: $PROOT_BIN"
-
-          if [ -z "$PROOT_BIN" ]; then
-            echo "ERROR: proot binary not found in .deb"
-            exit 1
-          fi
-
-          # Patch com.termux → com.korexx in proot binary
-          perl -pi -e 's/com\.termux/com.korexx/g' "$PROOT_BIN" 2>/dev/null || true
-
-          # Inject proot into bootstrap zip
-          mkdir -p bootstrap_inject/bin
-          cp "$PROOT_BIN" bootstrap_inject/bin/proot
-          chmod +x bootstrap_inject/bin/proot
-
-          cd bootstrap_inject
-          zip -r9 ../bootstrap-aarch64-korex.zip bin/proot
-          cd ..
-
-          echo "✓ proot injected into bootstrap"
-          unzip -l bootstrap-aarch64-korex.zip | grep proot
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
