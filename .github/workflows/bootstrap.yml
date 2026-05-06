@@ -52,11 +52,9 @@ jobs:
 
           echo "Building bootstrap with extra packages: $EXTRA"
 
-          # Run build inside Termux Docker container
-          # --architectures aarch64 — only arm64, skip other archs to save time
-          docker run --rm \
+          # Run build inside Termux Docker container with --privileged for FUSE support
+          docker run --rm --privileged \
             -v "$(pwd):/home/builder/termux-packages" \
-            -u builder \
             termux/package-builder:latest \
             bash -c "cd /home/builder/termux-packages && \
               ./scripts/build-bootstraps.sh \
