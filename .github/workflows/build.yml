@@ -100,7 +100,7 @@ jobs:
             if [ -n "$PROOT_BIN" ]; then
               mkdir -p patched_bootstrap/bin
               cp "$PROOT_BIN" patched_bootstrap/bin/proot
-              perl -pi -e 's/com\.termux/com.termux/g' patched_bootstrap/bin/proot 2>/dev/null || true
+              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/bin/proot 2>/dev/null || true
               chmod +x patched_bootstrap/bin/proot
               echo "✓ proot injected"
 
@@ -148,6 +148,12 @@ jobs:
           zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
           cd ..
           ls -lh bootstrap-aarch64-korex.zip
+
+      - name: Setup debug keystore
+        run: |
+          mkdir -p ~/.android
+          echo "${{ secrets.DEBUG_KEYSTORE_BASE64 }}" | base64 -d > ~/.android/debug.keystore
+          echo "✓ Debug keystore restored"
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
