@@ -29,12 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val PANEL_WIDTH = 90.dp
-private val ICON_SIZE   = 22.dp
+private val PANEL_WIDTH = 72.dp
+private val ICON_SIZE   = 20.dp
 
 @Composable
 fun LeftBar(
@@ -48,25 +47,25 @@ fun LeftBar(
     Box(modifier = modifier.fillMaxHeight()) {
         AnimatedVisibility(
             visible = isPanelOpen,
-            enter   = slideInHorizontally(animationSpec = tween(220)) { -it },
-            exit    = slideOutHorizontally(animationSpec = tween(220)) { -it },
+            enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
+            exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
         ) {
             Column(
                 modifier = Modifier
                     .width(PANEL_WIDTH)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.surface)
-                    .statusBarsPadding(), // start below status bar, same as TopBar
+                    .statusBarsPadding(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Top,
             ) {
-                // Close button — top, aligned with TopBar height
+                // Hide button
                 PanelItem(
                     icon       = Icons.Rounded.Close,
                     label      = "Hide",
-                    tint       = MaterialTheme.colorScheme.error,
+                    tint       = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     onClick    = onClose,
-                    topPadding = 14.dp,
+                    topPadding = 16.dp,
                 )
 
                 PanelItem(
@@ -81,9 +80,9 @@ fun LeftBar(
                 PanelItem(
                     icon          = Icons.Rounded.Settings,
                     label         = "Settings",
-                    tint          = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    tint          = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                     onClick       = onSettings,
-                    bottomPadding = 20.dp,
+                    bottomPadding = 24.dp,
                 )
             }
         }
@@ -96,15 +95,15 @@ private fun PanelItem(
     label: String,
     tint: Color,
     onClick: () -> Unit,
-    topPadding: Dp = 8.dp,
-    bottomPadding: Dp = 0.dp,
+    topPadding: androidx.compose.ui.unit.Dp = 8.dp,
+    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
     Column(
         modifier = Modifier
             .padding(top = topPadding, bottom = bottomPadding)
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(8.dp))
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 8.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -118,7 +117,7 @@ private fun PanelItem(
             text     = label,
             color    = tint,
             fontSize = 10.sp,
-            modifier = Modifier.padding(top = 3.dp),
+            modifier = Modifier.padding(top = 4.dp),
             style    = MaterialTheme.typography.labelSmall,
         )
     }
