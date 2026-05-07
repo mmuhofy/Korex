@@ -103,7 +103,7 @@ These rules override everything else:
 | Component | Value |
 |---|---|
 | App Name | `Korex` |
-| Package Name | `com.korexx` |
+| Package Name | `com.termux` |
 | Language | Kotlin |
 | UI Framework | Jetpack Compose |
 | Min SDK | 26 (Android 8.0) |

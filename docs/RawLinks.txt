@@ -12,19 +12,19 @@ https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/build.gradle
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/build.gradle.kts
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/domain/SessionRepository.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/domain/SessionRepository.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/session/SessionManager.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/session/SessionManager.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/terminal/TerminalBridge.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/terminal/TerminalBridge.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/gesture/GestureDetector.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/gesture/GestureDetector.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/util/Constants.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/util/Constants.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/MainActivity.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/MainActivity.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/KorexApplication.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/KorexApplication.kt
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/AndroidManifest.xml
 
@@ -32,37 +32,37 @@ https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/res
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/.github/workflows/build.yml
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/theme/Color.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/theme/Color.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/theme/Type.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/theme/Type.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/theme/Theme.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/theme/Theme.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/terminal/KorexTerminalSessionClient.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/terminal/KorexTerminalSessionClient.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/terminal/TerminalViewCompose.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/terminal/TerminalViewCompose.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/session/SessionEntity.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/session/SessionEntity.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/session/SessionDao.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/session/SessionDao.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/session/SessionConverters.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/session/SessionConverters.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/session/SessionRepositoryImpl.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/session/SessionRepositoryImpl.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/MainViewModel.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/MainViewModel.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/KorexScreen.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/KorexScreen.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/SessionBar.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/SessionBar.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/TerminalPane.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/TerminalPane.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/terminal/KorexTerminalViewClient.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/terminal/KorexTerminalViewClient.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/NewSessionDialog.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/NewSessionDialog.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/LeftBar.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/LeftBar.kt
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/core/terminal-emulator/build.gradle
 
@@ -72,49 +72,49 @@ https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/core/terminal-em
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/core/terminal-view/src/main/AndroidManifest.xml
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/ExtraKeyBar.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/ExtraKeyBar.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/RememberTerminalViewClient.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/RememberTerminalViewClient.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/TopBar.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/TopBar.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/snippet/SnippetEntity.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/snippet/SnippetEntity.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/snippet/SnippetDao.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/snippet/SnippetDao.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/domain/SnippetRepository.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/domain/SnippetRepository.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/snippet/SnippetRepositoryImpl.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/snippet/SnippetRepositoryImpl.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/SnippetViewModel.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/SnippetViewModel.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/SnippetSheet.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/SnippetSheet.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/session/SplitScreenState.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/session/SplitScreenState.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/SplitTerminalPane.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/SplitTerminalPane.kt
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/.github/workflows/bootstrap.yml
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/history/CommandHistoryEntity.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/history/CommandHistoryEntity.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/history/CommandHistoryDao.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/history/CommandHistoryDao.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/domain/CommandHistoryRepository.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/domain/CommandHistoryRepository.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/data/history/CommandHistoryRepositoryImpl.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/data/history/CommandHistoryRepositoryImpl.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/CommandHistoryViewModel.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/CommandHistoryViewModel.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/components/CommandHistorySheet.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/components/CommandHistorySheet.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/terminal/BootstrapInstaller.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/terminal/BootstrapInstaller.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/BootstrapScreen.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/BootstrapScreen.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/BootstrapViewModel.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/BootstrapViewModel.kt
 
-https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.korexx/ui/BootstrapErrorScreen.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/kotlin/com.termux/ui/BootstrapErrorScreen.kt
 
 https://raw.githubusercontent.com/mmuhofy/Korex/refs/heads/main/app/src/main/jni/korex-bootstrap.c
 

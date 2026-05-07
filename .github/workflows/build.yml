@@ -67,19 +67,8 @@ jobs:
           ls patched_bootstrap/
           find patched_bootstrap -name "proot" | head -3
 
-          # Patch com.termux → com.korexx (same byte length = 10, binary-safe)
-          echo "=== Patching package name ==="
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "text"; then
-              sed -i 's/com\.termux/com.korexx/g' "$f"
-            fi
-          done
-          find patched_bootstrap -type f | while read f; do
-            if file "$f" | grep -q "ELF"; then
-              perl -pi -e 's/com\.termux/com.korexx/g' "$f" 2>/dev/null || true
-            fi
-          done
-          echo "✓ Patch done"
+          # No package name patching needed — app uses com.termux directly
+          echo "✓ No patch needed"
 
           # Copy libs to usr/lib
           if [ -d "patched_bootstrap/lib" ]; then
@@ -111,7 +100,7 @@ jobs:
             if [ -n "$PROOT_BIN" ]; then
               mkdir -p patched_bootstrap/bin
               cp "$PROOT_BIN" patched_bootstrap/bin/proot
-              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/bin/proot 2>/dev/null || true
+              perl -pi -e 's/com\.termux/com.termux/g' patched_bootstrap/bin/proot 2>/dev/null || true
               chmod +x patched_bootstrap/bin/proot
               echo "✓ proot injected"
 

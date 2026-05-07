@@ -22,17 +22,17 @@ jobs:
           git clone --depth=1 https://github.com/termux/termux-packages.git
           echo "termux-packages cloned"
 
-      - name: Patch properties.sh for com.korexx
+      - name: Patch properties.sh for com.termux
         run: |
           cd termux-packages
 
-          # Patch package name — com.termux (10 chars) → com.korexx (10 chars), same length
-          sed -i 's/TERMUX_APP__PACKAGE_NAME="com\.termux"/TERMUX_APP__PACKAGE_NAME="com.korexx"/' scripts/properties.sh
+          # Patch package name — com.termux (10 chars) → com.termux (10 chars), same length
+          sed -i 's/TERMUX_APP__PACKAGE_NAME="com\.termux"/TERMUX_APP__PACKAGE_NAME="com.termux"/' scripts/properties.sh
 
           # Verify patch
           grep "TERMUX_APP__PACKAGE_NAME" scripts/properties.sh | head -3
 
-          echo "✓ Package name patched to com.korexx"
+          echo "✓ Package name patched to com.termux"
 
       - name: Pull Termux Docker image
         run: |
@@ -74,7 +74,7 @@ jobs:
           # Quick verify
           unzip -t ../bootstrap-aarch64-korex.zip | tail -3
 
-          # Confirm com.korexx is in the zip
+          # Confirm com.termux is in the zip
           echo "=== Checking package name in bootstrap ==="
           unzip -p ../bootstrap-aarch64-korex.zip SYMLINKS.txt | grep -c "korexx" || true
           unzip -p ../bootstrap-aarch64-korex.zip SYMLINKS.txt | grep "korexx" | head -5

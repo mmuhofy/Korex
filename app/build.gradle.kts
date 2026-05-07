@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace   = "com.korexx"
+    namespace   = "com.termux"
     compileSdk  = 35
 
     defaultConfig {
-        applicationId   = "com.korexx"
+        applicationId   = "com.termux"
         minSdk          = 26
         targetSdk       = 28
         versionCode     = 1
