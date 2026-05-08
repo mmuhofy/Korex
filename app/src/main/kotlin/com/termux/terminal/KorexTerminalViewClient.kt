@@ -1,12 +1,15 @@
 package com.termux.terminal
 
+import android.content.Context
 import android.view.KeyEvent
 import android.view.MotionEvent
+import android.view.inputmethod.InputMethodManager
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 
 class KorexTerminalViewClient(
     private val bridge: TerminalBridge,
+    private val context: Context,
 ) : TerminalViewClient {
 
     var terminalView: TerminalView? = null
@@ -33,7 +36,12 @@ class KorexTerminalViewClient(
         onCopyModeChanged?.invoke(copyMode)
     }
 
-    override fun onSingleTapUp(e: MotionEvent?) {}
+    override fun onSingleTapUp(e: MotionEvent?) {
+        val view = terminalView ?: return
+        view.requestFocus()
+        val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
     override fun shouldBackButtonBeMappedToEscape(): Boolean = false
     override fun shouldEnforceCharBasedInput(): Boolean = true
     override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
