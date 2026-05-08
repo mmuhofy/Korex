@@ -1,25 +1,16 @@
-package com.korexx.terminal
+package com.termux.terminal
 
 import android.content.Context
 import android.util.Log
 import com.termux.terminal.TerminalSession
-import com.korexx.util.TERMINAL_FONT_SIZE_DEFAULT
-import com.korexx.util.TERMINAL_FONT_SIZE_MAX
-import com.korexx.util.TERMINAL_FONT_SIZE_MIN
-import com.korexx.util.TERMINAL_TRANSCRIPT_ROWS
+import com.termux.util.TERMINAL_FONT_SIZE_DEFAULT
+import com.termux.util.TERMINAL_FONT_SIZE_MAX
+import com.termux.util.TERMINAL_FONT_SIZE_MIN
+import com.termux.util.TERMINAL_TRANSCRIPT_ROWS
 import java.io.File
 
 private const val TAG = "TerminalBridge"
 
-/**
- * Creates and owns a single TerminalSession (pty process).
- * One TerminalBridge per Korex session.
- *
- * SHELL RESOLUTION:
- * targetSdkVersion = 28 allows execve() from filesDir on Android 9 compat mode.
- * Shell binaries live in filesDir/usr/bin/ after bootstrap installation.
- * Priority: zsh → bash → /system/bin/sh
- */
 class TerminalBridge(
     private val context: Context,
     val sessionClient: KorexTerminalSessionClient = KorexTerminalSessionClient(context),
@@ -77,8 +68,6 @@ class TerminalBridge(
             val filesDir  = context.filesDir.absolutePath
             val prefix    = "$filesDir/usr"
             val nativeDir = context.applicationInfo.nativeLibraryDir
-
-            // libtermux.so = termux-exec, intercepts execve() for child processes
             val termuxExec = "$nativeDir/libtermux.so"
 
             return arrayOf(
@@ -91,7 +80,6 @@ class TerminalBridge(
                 "LANG=en_US.UTF-8",
                 "TMPDIR=$prefix/tmp",
                 "SHELL=$prefix/bin/zsh",
-                // Required by termux-exec to intercept and rewrite com.termux paths
                 "TERMUX_APP_DATA_DIR=$filesDir",
                 "TERMUX_ROOTFS=$filesDir",
                 "TERMUX_PREFIX=$prefix",
