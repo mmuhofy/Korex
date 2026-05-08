@@ -159,6 +159,7 @@ class SessionManager @Inject constructor(
     private fun createBridge(id: String) {
         if (bridges.containsKey(id)) return
         val client = KorexTerminalSessionClient(
+            context           = context,
             onSessionFinished = { handleSessionFinished(id) },
         )
         bridges[id] = TerminalBridge(context, client)
