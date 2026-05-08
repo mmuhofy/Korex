@@ -3,6 +3,7 @@ package com.termux.di
 import android.content.Context
 import androidx.room.Room
 import com.termux.data.KorexDatabase
+import com.termux.data.SettingsDataStore
 import com.termux.data.history.CommandHistoryDao
 import com.termux.data.history.CommandHistoryRepositoryImpl
 import com.termux.data.session.SessionDao
@@ -39,6 +40,11 @@ object DatabaseModule {
 
     @Provides
     fun provideCommandHistoryDao(db: KorexDatabase): CommandHistoryDao = db.commandHistoryDao()
+
+    @Provides
+    @Singleton
+    fun provideSettingsDataStore(@ApplicationContext context: Context): SettingsDataStore =
+        SettingsDataStore(context)
 }
 
 @Module

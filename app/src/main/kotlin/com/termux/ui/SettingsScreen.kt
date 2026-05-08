@@ -2,7 +2,6 @@ package com.termux.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -27,23 +26,20 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    var darkTheme   by remember { mutableStateOf(true) }
-    var fontSize    by remember { mutableFloatStateOf(14f) }
-    var defaultShell by remember { mutableStateOf("zsh") }
+    val settings by viewModel.settings.collectAsStateWithLifecycle()
 
     Column(
         modifier = Modifier
@@ -86,15 +82,14 @@ fun SettingsScreen(
             SettingsGroupHeader("Appearance")
 
             SettingsToggleItem(
-                icon    = Icons.Rounded.DarkMode,
-                title   = "Dark theme",
-                checked = darkTheme,
-                onCheckedChange = { darkTheme = it },
+                icon            = Icons.Rounded.DarkMode,
+                title           = "Dark theme",
+                checked         = settings.darkTheme,
+                onCheckedChange = { viewModel.setDarkTheme(it) },
             )
 
             SettingsDivider()
 
-            // Font size slider
             SettingsSectionTitle(Icons.Rounded.TextFields, "Font size")
             Row(
                 modifier          = Modifier
@@ -103,14 +98,14 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Slider(
-                    value         = fontSize,
-                    onValueChange = { fontSize = it },
+                    value         = settings.fontSize,
+                    onValueChange = { viewModel.setFontSize(it) },
                     valueRange    = 8f..32f,
                     steps         = 23,
                     modifier      = Modifier.weight(1f),
                 )
                 Text(
-                    text     = "${fontSize.toInt()}sp",
+                    text     = "${settings.fontSize.toInt()}sp",
                     style    = MaterialTheme.typography.bodySmall,
                     color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                     modifier = Modifier.padding(start = 12.dp),
@@ -130,7 +125,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 listOf("bash", "zsh").forEach { shell ->
-                    val selected = defaultShell == shell
+                    val selected = settings.defaultShell == shell
                     Text(
                         text     = shell,
                         style    = MaterialTheme.typography.bodyMedium,
@@ -138,7 +133,7 @@ fun SettingsScreen(
                                    else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                         fontSize = 13.sp,
                         modifier = Modifier
-                            .clickable { defaultShell = shell }
+                            .clickable { viewModel.setDefaultShell(shell) }
                             .padding(end = 20.dp, top = 4.dp, bottom = 4.dp),
                     )
                 }
