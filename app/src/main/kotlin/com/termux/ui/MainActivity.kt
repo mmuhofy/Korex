@@ -1,8 +1,6 @@
 package com.termux.ui
 
-import android.graphics.Rect
 import android.os.Bundle
-import android.view.View
 import android.view.inputmethod.InputMethodManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,9 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val bootstrapViewModel: BootstrapViewModel by viewModels()
-
-    private var isKeyboardVisible = false
-    private var wasKeyboardOpen   = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,25 +37,22 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onPause() {
-        super.onPause()
-        wasKeyboardOpen = isKeyboardVisible
-    }
-
     override fun onResume() {
         super.onResume()
-        val rootView = findViewById<View>(android.R.id.content)
-        rootView.viewTreeObserver.addOnGlobalLayoutListener {
-            val rect = Rect()
-            rootView.getWindowVisibleDisplayFrame(rect)
-            val screenHeight = rootView.rootView.height
-            isKeyboardVisible = (screenHeight - rect.bottom) > screenHeight * 0.15
-        }
-        if (wasKeyboardOpen && !isKeyboardVisible) {
-            terminalViewRef.get()?.let { view ->
-                val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-                imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
-            }
-        }
+        showKeyboardWithDelay()
+    }
+
+    /**
+     * Request focus on the terminal view and show the soft keyboard.
+     * Matches Termux's setSoftKeyboardState() behavior — always show on resume
+     * with a short delay to ensure the view is ready.
+     */
+    private fun showKeyboardWithDelay() {
+        val view = terminalViewRef.get() ?: return
+        view.requestFocus()
+        view.postDelayed({
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+        }, 300)
     }
 }
