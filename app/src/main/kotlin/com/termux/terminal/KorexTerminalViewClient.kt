@@ -2,7 +2,6 @@ package com.termux.terminal
 
 import android.view.KeyEvent
 import android.view.MotionEvent
-import com.termux.terminal.TerminalSession
 import com.termux.view.TerminalView
 import com.termux.view.TerminalViewClient
 
@@ -12,18 +11,26 @@ class KorexTerminalViewClient(
 
     var terminalView: TerminalView? = null
 
-    // Pinch zoom — scales font size
+    /**
+     * Called when copy mode starts (user long pressed and is selecting text)
+     * or ends (user lifted finger). We notify the Compose layer via callback.
+     */
+    var onCopyModeChanged: ((Boolean) -> Unit)? = null
+
     override fun onScale(scale: Float): Float {
         terminalView?.applyFontScale(bridge, scale)
         return scale
     }
 
-    // Long press → copy selected text to clipboard
-    override fun onLongPress(event: MotionEvent?): Boolean {
-        val view = terminalView ?: return false
-        // TerminalView handles text selection internally on long press
-        // We return false to let the default Termux copy mode activate
-        return false
+    override fun onLongPress(event: MotionEvent?): Boolean = false
+
+    /**
+     * TerminalView calls this when copy mode starts/ends.
+     * true  = user is selecting text
+     * false = selection ended
+     */
+    override fun copyModeChanged(copyMode: Boolean) {
+        onCopyModeChanged?.invoke(copyMode)
     }
 
     override fun onSingleTapUp(e: MotionEvent?) {}
@@ -31,7 +38,6 @@ class KorexTerminalViewClient(
     override fun shouldEnforceCharBasedInput(): Boolean = true
     override fun shouldUseCtrlSpaceWorkaround(): Boolean = false
     override fun isTerminalViewSelected(): Boolean = true
-    override fun copyModeChanged(copyMode: Boolean) {}
     override fun onKeyDown(keyCode: Int, e: KeyEvent?, session: TerminalSession?): Boolean = false
     override fun onKeyUp(keyCode: Int, e: KeyEvent?): Boolean = false
     override fun readControlKey(): Boolean = false
