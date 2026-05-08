@@ -1,12 +1,12 @@
-package com.termux.terminal
+package com.korexx.terminal
 
 import android.content.Context
 import android.util.Log
 import com.termux.terminal.TerminalSession
-import com.termux.util.TERMINAL_FONT_SIZE_DEFAULT
-import com.termux.util.TERMINAL_FONT_SIZE_MAX
-import com.termux.util.TERMINAL_FONT_SIZE_MIN
-import com.termux.util.TERMINAL_TRANSCRIPT_ROWS
+import com.korexx.util.TERMINAL_FONT_SIZE_DEFAULT
+import com.korexx.util.TERMINAL_FONT_SIZE_MAX
+import com.korexx.util.TERMINAL_FONT_SIZE_MIN
+import com.korexx.util.TERMINAL_TRANSCRIPT_ROWS
 import java.io.File
 
 private const val TAG = "TerminalBridge"
@@ -22,7 +22,7 @@ private const val TAG = "TerminalBridge"
  */
 class TerminalBridge(
     private val context: Context,
-    val sessionClient: KorexTerminalSessionClient,
+    val sessionClient: KorexTerminalSessionClient = KorexTerminalSessionClient(context),
 ) {
 
     val session: TerminalSession = TerminalSession(
