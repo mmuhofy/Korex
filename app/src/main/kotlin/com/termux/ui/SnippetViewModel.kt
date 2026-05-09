@@ -4,7 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.termux.data.snippet.SnippetEntity
 import com.termux.domain.SnippetRepository
+import com.termux.session.SessionManager
 import com.termux.terminal.SnippetSyncManager
+import com.termux.terminal.TerminalBridge
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,6 +19,7 @@ import javax.inject.Inject
 class SnippetViewModel @Inject constructor(
     private val repository: SnippetRepository,
     private val syncManager: SnippetSyncManager,
+    private val sessionManager: SessionManager,
 ) : ViewModel() {
 
     val snippets: StateFlow<List<SnippetEntity>> = repository.observeAll()
@@ -32,21 +35,33 @@ class SnippetViewModel @Inject constructor(
                     createdAt = System.currentTimeMillis(),
                 )
             )
-            syncManager.sync(repository.getAll())
+            doSync()
         }
     }
 
     fun updateSnippet(snippet: SnippetEntity, title: String, command: String) {
         viewModelScope.launch {
             repository.update(snippet.copy(title = title.trim(), command = command.trim()))
-            syncManager.sync(repository.getAll())
+            doSync()
         }
     }
 
     fun deleteSnippet(id: String) {
         viewModelScope.launch {
             repository.delete(id)
-            syncManager.sync(repository.getAll())
+            doSync()
         }
     }
+
+    private suspend fun doSync() {
+        syncManager.sync(
+            snippets   = repository.getAll(),
+            getBridges = { liveBridges() },
+        )
+    }
+
+    /** Returns all currently alive TerminalBridge instances. */
+    private fun liveBridges(): Collection<TerminalBridge> =
+        sessionManager.activeSessions.value
+            .mapNotNull { sessionManager.getBridge(it.id) }
 }

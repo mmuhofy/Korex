@@ -10,113 +10,125 @@ import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val TAG = "SnippetSyncManager"
+private const val TAG            = "SnippetSyncManager"
+private const val KOREX_DIR      = ".korex"
+private const val SNIPPETS_FILE  = "snippets.zsh"
+private const val SOURCE_MARKER  = "# korex-snippets"
 
-// Paths relative to filesDir/home (~)
-private const val KOREX_DIR          = ".korex"
-private const val SNIPPETS_FILE      = "snippets.zsh"
-private const val ZSHRC_FILE         = ".zshrc"
-private const val BASHRC_FILE        = ".bashrc"
-private const val SOURCE_MARKER      = "# korex-snippets"
-private const val SOURCE_LINE        = "[ -f ~/.$KOREX_DIR/$SNIPPETS_FILE ] && source ~/.$KOREX_DIR/$SNIPPETS_FILE  $SOURCE_MARKER"
+// All rc files that should source snippets.zsh
+private val RC_FILES = listOf(".zshrc", ".bashrc")
 
 /**
- * Syncs the in-app snippet list to ~/.korex/snippets.zsh as shell aliases.
+ * Syncs the in-app snippet list to ~/.korex/snippets.zsh as shell aliases,
+ * then hot-reloads the file in every live terminal session so aliases are
+ * immediately available without restarting.
  *
  * Flow:
- * 1. Writes all snippets as `alias name='command'` to ~/.korex/snippets.zsh
- * 2. Ensures ~/.zshrc and ~/.bashrc source this file (one-time setup)
+ *   1. Write all snippets as `alias name='command'` to ~/.korex/snippets.zsh
+ *   2. Ensure every rc file (zshrc, bashrc) sources the file on startup
+ *   3. Send `source ~/.korex/snippets.zsh` to every live TerminalBridge
+ *      so the current session picks up changes instantly
  *
- * Alias name is derived from snippet title:
- *   - lowercased
- *   - spaces → underscores
- *   - non-alphanumeric/underscore chars stripped
- *   - truncated to 32 chars
- *
- * Example:
- *   title = "Git Push Main"  →  alias git_push_main='git push origin main'
+ * Alias name derivation:
+ *   "Git Push Main" → git_push_main
  */
 @Singleton
 class SnippetSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
 
-    private val homeDir    get() = File(context.filesDir, "home")
-    private val korexDir   get() = File(homeDir, KOREX_DIR)
+    private val homeDir      get() = File(context.filesDir, "home")
+    private val korexDir     get() = File(homeDir, KOREX_DIR)
     private val snippetsFile get() = File(korexDir, SNIPPETS_FILE)
 
     /**
-     * Rewrites ~/.korex/snippets.zsh with the full current snippet list.
-     * Also ensures rc files source it.
-     * Safe to call on every add/update/delete.
+     * Rewrites snippets.zsh and hot-reloads in all live sessions.
+     * [getBridges] is a lambda so we don't hold a reference to SessionManager
+     * (avoids circular DI dependency).
      */
-    suspend fun sync(snippets: List<SnippetEntity>) = withContext(Dispatchers.IO) {
+    suspend fun sync(
+        snippets: List<SnippetEntity>,
+        getBridges: () -> Collection<TerminalBridge> = { emptyList() },
+    ) = withContext(Dispatchers.IO) {
         runCatching {
+            // ── 1. Write snippets file ────────────────────────────────────
             korexDir.mkdirs()
-
             val content = buildSnippetsFile(snippets)
             snippetsFile.writeText(content, Charsets.UTF_8)
-            Log.i(TAG, "Wrote ${snippets.size} snippets to ${snippetsFile.absolutePath}")
+            Log.i(TAG, "Wrote ${snippets.size} snippets → ${snippetsFile.absolutePath}")
 
-            ensureRcSourced(ZSHRC_FILE)
-            ensureRcSourced(BASHRC_FILE)
+            // ── 2. Ensure rc files source snippets.zsh ────────────────────
+            RC_FILES.forEach { ensureRcSourced(it) }
+
+            // ── 3. Hot-reload in every live terminal ──────────────────────
+            val sourceCmd = "source \"${snippetsFile.absolutePath}\"\n"
+            getBridges().forEach { bridge ->
+                runCatching { bridge.write(sourceCmd) }
+                    .onFailure { Log.w(TAG, "Failed to hot-reload in bridge: ${it.message}") }
+            }
+            Log.i(TAG, "Hot-reloaded snippets in ${getBridges().size} session(s)")
 
         }.onFailure { e ->
-            Log.e(TAG, "Failed to sync snippets", e)
+            Log.e(TAG, "Snippet sync failed", e)
         }
     }
 
-    /**
-     * Builds the full snippets.zsh content from the snippet list.
-     */
-    private fun buildSnippetsFile(snippets: List<SnippetEntity>): String {
-        val sb = StringBuilder()
-        sb.appendLine("# Korex snippets — auto-generated, do not edit manually")
-        sb.appendLine("# Add/edit snippets via the Korex app")
-        sb.appendLine()
+    // ── Private helpers ──────────────────────────────────────────────────
 
+    private fun buildSnippetsFile(snippets: List<SnippetEntity>): String = buildString {
+        appendLine("# Korex snippets — auto-generated, do not edit manually")
+        appendLine("# Manage snippets via the Korex app")
+        appendLine()
         for (snippet in snippets) {
-            val aliasName = toAliasName(snippet.title)
-            if (aliasName.isBlank()) continue
-
-            // Escape single quotes in command: ' → '\''
-            val escapedCmd = snippet.command.replace("'", "'\\''")
-            sb.appendLine("# ${snippet.title}")
-            sb.appendLine("alias $aliasName='$escapedCmd'")
-            sb.appendLine()
+            val name = toAliasName(snippet.title)
+            if (name.isBlank()) continue
+            val cmd = snippet.command.replace("'", "'\\''") // escape single quotes
+            appendLine("# ${snippet.title}")
+            appendLine("alias $name='$cmd'")
+            appendLine()
         }
-
-        return sb.toString()
     }
 
     /**
-     * Ensures the rc file sources snippets.zsh.
-     * Adds the source line only if not already present.
-     * Creates the rc file if it doesn't exist.
+     * Adds `source ~/.korex/snippets.zsh` to [rcFileName] if not already present.
+     * Creates the file if missing.
+     *
+     * Uses the absolute path (not ~/) to avoid expansion issues across shells.
      */
     private fun ensureRcSourced(rcFileName: String) {
         val rcFile = File(homeDir, rcFileName)
+        val sourceLine = buildSourceLine()
 
         if (!rcFile.exists()) {
-            rcFile.writeText("$SOURCE_LINE\n", Charsets.UTF_8)
+            rcFile.writeText("$sourceLine\n", Charsets.UTF_8)
             Log.i(TAG, "Created $rcFileName with source line")
             return
         }
 
         val content = rcFile.readText(Charsets.UTF_8)
         if (SOURCE_MARKER !in content) {
-            rcFile.appendText("\n$SOURCE_LINE\n", Charsets.UTF_8)
-            Log.i(TAG, "Added source line to $rcFileName")
+            rcFile.appendText("\n$sourceLine\n", Charsets.UTF_8)
+            Log.i(TAG, "Appended source line to $rcFileName")
+        } else {
+            Log.d(TAG, "$rcFileName already sources snippets — skipping")
         }
     }
 
     /**
-     * Converts a snippet title to a valid shell alias name.
+     * Builds the source line using the absolute path so it works
+     * regardless of how $HOME is set in the shell environment.
+     */
+    private fun buildSourceLine(): String {
+        val absPath = snippetsFile.absolutePath
+        return "[ -f \"$absPath\" ] && source \"$absPath\"  $SOURCE_MARKER"
+    }
+
+    /**
      * "Git Push Main" → "git_push_main"
+     * Strips non-alphanumeric, lowercases, replaces spaces with underscores.
      */
     private fun toAliasName(title: String): String =
-        title
-            .trim()
+        title.trim()
             .lowercase()
             .replace(Regex("\\s+"), "_")
             .replace(Regex("[^a-z0-9_]"), "")
