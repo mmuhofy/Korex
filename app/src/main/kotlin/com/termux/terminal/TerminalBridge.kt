@@ -13,10 +13,11 @@ private const val TAG = "TerminalBridge"
 class TerminalBridge(
     private val context: Context,
     val sessionClient: KorexTerminalSessionClient = KorexTerminalSessionClient(context),
+    shellOverride: String? = null,                // set by SessionManager from DataStore
 ) {
 
     val session: TerminalSession = TerminalSession(
-        /* shellPath      */ resolveShellPath(context),
+        /* shellPath      */ shellOverride ?: resolveShellPath(context),
         /* cwd            */ homeDir(context).also { it.mkdirs() }.absolutePath,
         /* args           */ resolveShellArgs(context),
         /* env            */ buildEnv(context),

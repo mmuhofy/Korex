@@ -1,6 +1,7 @@
 package com.termux.session
 
 import android.content.Context
+import com.termux.data.SettingsDataStore
 import com.termux.data.session.SessionEntity
 import com.termux.data.session.SessionStatus
 import com.termux.domain.SessionRepository
@@ -14,30 +15,30 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.io.File
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-// UNTESTED — verify before use
 @Singleton
 class SessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val repository: SessionRepository,
+    private val settingsDataStore: SettingsDataStore,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    // Active pty bridges — keyed by session id
     private val bridges = mutableMapOf<String, TerminalBridge>()
 
-    private val _activeSessions = MutableStateFlow<List<SessionEntity>>(emptyList())
+    private val _activeSessions  = MutableStateFlow<List<SessionEntity>>(emptyList())
     val activeSessions: StateFlow<List<SessionEntity>> = _activeSessions.asStateFlow()
 
     private val _activeSessionId = MutableStateFlow<String?>(null)
     val activeSessionId: StateFlow<String?> = _activeSessionId.asStateFlow()
 
     init {
-        // Observe DB and keep state in sync
         scope.launch {
             repository.observeAll().collect { sessions ->
                 _activeSessions.value = sessions
@@ -49,7 +50,6 @@ class SessionManager @Inject constructor(
     // Public API
     // ------------------------------------------------------------------ //
 
-    /** Restore sessions from DB on app start. Re-creates pty bridges for surviving sessions. */
     fun restoreOnStart() {
         scope.launch {
             val sessions = _activeSessions.value
@@ -61,15 +61,13 @@ class SessionManager @Inject constructor(
                     repository.updateStatus(entity.id, SessionStatus.BACKGROUND)
                 }
             }
-            // Set active to first pinned, or first in list
             val toRestore = sessions.firstOrNull { it.isPinned } ?: sessions.firstOrNull()
             toRestore?.let { switchTo(it.id) }
         }
     }
 
-    /** Create a new session with the given name and make it active. */
     fun createSession(name: String) {
-        val id = UUID.randomUUID().toString()
+        val id  = UUID.randomUUID().toString()
         val now = System.currentTimeMillis()
         val sanitizedName = name.trim().take(SESSION_NAME_MAX_LENGTH).ifEmpty { "Session" }
         val entity = SessionEntity(
@@ -90,7 +88,6 @@ class SessionManager @Inject constructor(
         }
     }
 
-    /** Switch the active terminal to the session with the given id. */
     fun switchTo(id: String) {
         scope.launch {
             val prev = _activeSessionId.value
@@ -102,31 +99,25 @@ class SessionManager @Inject constructor(
         }
     }
 
-    /** Switch to next session in list (wraps around). */
     fun switchToNext() {
         val sessions = _activeSessions.value
         if (sessions.size < 2) return
-        val currentIndex = sessions.indexOfFirst { it.id == _activeSessionId.value }
-        val nextIndex = (currentIndex + 1) % sessions.size
-        switchTo(sessions[nextIndex].id)
+        val idx = sessions.indexOfFirst { it.id == _activeSessionId.value }
+        switchTo(sessions[(idx + 1) % sessions.size].id)
     }
 
-    /** Switch to previous session in list (wraps around). */
     fun switchToPrevious() {
         val sessions = _activeSessions.value
         if (sessions.size < 2) return
-        val currentIndex = sessions.indexOfFirst { it.id == _activeSessionId.value }
-        val prevIndex = (currentIndex - 1 + sessions.size) % sessions.size
-        switchTo(sessions[prevIndex].id)
+        val idx = sessions.indexOfFirst { it.id == _activeSessionId.value }
+        switchTo(sessions[(idx - 1 + sessions.size) % sessions.size].id)
     }
 
-    /** Close and destroy a session. */
     fun closeSession(id: String) {
         scope.launch {
             bridges[id]?.destroy()
             bridges.remove(id)
             repository.delete(id)
-            // If closed session was active, switch to first available
             if (_activeSessionId.value == id) {
                 val remaining = _activeSessions.value.filter { it.id != id }
                 val next = remaining.firstOrNull { it.isPinned } ?: remaining.firstOrNull()
@@ -149,7 +140,6 @@ class SessionManager @Inject constructor(
         scope.launch { repository.updateCwd(id, cwd) }
     }
 
-    /** Get the TerminalBridge for the given session id, if alive. */
     fun getBridge(id: String): TerminalBridge? = bridges[id]
 
     // ------------------------------------------------------------------ //
@@ -158,11 +148,19 @@ class SessionManager @Inject constructor(
 
     private fun createBridge(id: String) {
         if (bridges.containsKey(id)) return
-        val client = KorexTerminalSessionClient(
-            context           = context,
-            onSessionFinished = { handleSessionFinished(id) },
-        )
-        bridges[id] = TerminalBridge(context, client)
+        scope.launch {
+            // Read preferred shell from DataStore — first() is a one-shot read
+            val preferredShell = settingsDataStore.settings.first().defaultShell
+            val client = KorexTerminalSessionClient(
+                context           = context,
+                onSessionFinished = { handleSessionFinished(id) },
+            )
+            bridges[id] = TerminalBridge(
+                context       = context,
+                sessionClient = client,
+                shellOverride = resolveShell(preferredShell),
+            )
+        }
     }
 
     private fun handleSessionFinished(id: String) {
@@ -172,5 +170,19 @@ class SessionManager @Inject constructor(
         }
     }
 
-    private val homeDir: String get() = context.filesDir.absolutePath
+    /**
+     * Resolves the preferred shell binary from the setting value ("zsh" / "bash").
+     * Falls back through zsh → bash → system sh if the preferred one isn't installed.
+     */
+    private fun resolveShell(preferred: String): String {
+        val binDir = File(context.filesDir, "usr/bin")
+        val order  = if (preferred == "bash") listOf("bash", "zsh") else listOf("zsh", "bash")
+        return order
+            .map { File(binDir, it) }
+            .firstOrNull { it.exists() }
+            ?.absolutePath
+            ?: "/system/bin/sh"
+    }
+
+    private val homeDir: String get() = File(context.filesDir, "home").absolutePath
 }
