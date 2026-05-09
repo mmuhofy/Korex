@@ -19,11 +19,11 @@ import com.termux.terminal.TerminalBridge
 import com.termux.terminal.TerminalViewCompose
 import com.termux.util.SWIPE_THRESHOLD_PX
 
-// UNTESTED — verify before use
 @Composable
 fun TerminalPane(
     activeSessionId: String?,
     getBridge: (String) -> TerminalBridge?,
+    fontSize: Int,                           // hot-applied, no session restart
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     onSwipeUp: () -> Unit,
@@ -38,27 +38,27 @@ fun TerminalPane(
             .background(MaterialTheme.colorScheme.background)
             .pointerInput(activeSessionId) {
                 detectHorizontalDragGestures(
-                    onDragStart  = { hDrag = 0f },
-                    onDragEnd    = {
+                    onDragStart      = { hDrag = 0f },
+                    onDragEnd        = {
                         when {
                             hDrag < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
                             hDrag > SWIPE_THRESHOLD_PX  -> onSwipeRight()
                         }
                         hDrag = 0f
                     },
-                    onDragCancel    = { hDrag = 0f },
+                    onDragCancel     = { hDrag = 0f },
                     onHorizontalDrag = { _, d -> hDrag += d },
                 )
             }
             .pointerInput(activeSessionId) {
                 detectVerticalDragGestures(
-                    onDragStart  = { vDrag = 0f },
-                    onDragEnd    = {
+                    onDragStart    = { vDrag = 0f },
+                    onDragEnd      = {
                         if (vDrag < -SWIPE_THRESHOLD_PX) onSwipeUp()
                         vDrag = 0f
                     },
-                    onDragCancel    = { vDrag = 0f },
-                    onVerticalDrag  = { _, d -> vDrag += d },
+                    onDragCancel   = { vDrag = 0f },
+                    onVerticalDrag = { _, d -> vDrag += d },
                 )
             },
     ) {
@@ -69,6 +69,7 @@ fun TerminalPane(
             TerminalViewCompose(
                 bridge     = bridge,
                 viewClient = viewClient,
+                fontSize   = fontSize,
                 modifier   = Modifier.fillMaxSize(),
             )
         } else {

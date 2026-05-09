@@ -20,11 +20,20 @@ var terminalViewRef: WeakReference<TerminalView> = WeakReference(null)
 fun TerminalViewCompose(
     bridge: TerminalBridge,
     viewClient: TerminalViewClient,
+    /**
+     * Font size in sp. Passed from SettingsViewModel so the terminal
+     * hot-applies size changes without restarting the session.
+     * Defaults to bridge.fontSize so callers that don't track settings
+     * still work correctly.
+     */
+    fontSize: Int = bridge.fontSize,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
 
-    val terminalView = remember(context) {
+    // Recreate the View only when the bridge (session) changes — NOT on fontSize.
+    // Font size is applied live in the update block below.
+    val terminalView = remember(bridge) {
         TerminalView(context, null).apply {
             setTerminalViewClient(viewClient)
             mRenderer = TerminalRenderer(bridge.fontSize, Typeface.MONOSPACE)
@@ -41,6 +50,13 @@ fun TerminalViewCompose(
     AndroidView(
         factory = { terminalView },
         update  = { view ->
+            // Hot-apply font size — runs whenever fontSize recompose key changes.
+            // bridge.setFontSize() keeps the bridge state in sync so pinch-zoom
+            // and settings slider don't fight each other.
+            bridge.setFontSize(fontSize)
+            view.mRenderer = TerminalRenderer(fontSize, Typeface.MONOSPACE)
+            view.invalidate()
+
             terminalViewRef = WeakReference(view)
             view.requestFocus()
             val imm = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager

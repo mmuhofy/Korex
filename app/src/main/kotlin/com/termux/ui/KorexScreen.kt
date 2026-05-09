@@ -32,6 +32,7 @@ fun KorexScreen(
     viewModel: MainViewModel = hiltViewModel(),
     snippetViewModel: SnippetViewModel = hiltViewModel(),
     historyViewModel: CommandHistoryViewModel = hiltViewModel(),
+    settingsViewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val sessions        by viewModel.sessions.collectAsStateWithLifecycle()
     val activeSessionId by viewModel.activeSessionId.collectAsStateWithLifecycle()
@@ -41,9 +42,13 @@ fun KorexScreen(
     val snippets        by snippetViewModel.snippets.collectAsStateWithLifecycle()
     val history         by historyViewModel.history.collectAsStateWithLifecycle()
     val searchQuery     by historyViewModel.searchQuery.collectAsStateWithLifecycle()
+    val settings        by settingsViewModel.settings.collectAsStateWithLifecycle()
+
+    // Font size as Int — drives hot-apply in TerminalViewCompose
+    val fontSize = settings.fontSize.toInt()
 
     var isPanelOpen          by remember { mutableStateOf(false) }
-    var showNewSessionDialog  by remember { mutableStateOf(false) }
+    var showNewSessionDialog by remember { mutableStateOf(false) }
     var showSnippetSheet     by remember { mutableStateOf(false) }
     var showHistorySheet     by remember { mutableStateOf(false) }
     var showSettings         by remember { mutableStateOf(false) }
@@ -57,11 +62,8 @@ fun KorexScreen(
     AnimatedContent(
         targetState = showSettings,
         transitionSpec = {
-            if (targetState) {
-                slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
-            } else {
-                slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
-            }
+            if (targetState) slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+            else             slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
         },
         label = "settings_transition",
     ) { isSettings ->
@@ -100,6 +102,7 @@ fun KorexScreen(
                         splitState      = splitState,
                         getBridge       = { viewModel.getBridge(it) },
                         activeSessionId = activeSessionId,
+                        fontSize        = fontSize,
                         onSwipeLeft     = { viewModel.switchToNext() },
                         onSwipeRight    = { viewModel.switchToPrevious() },
                         onSwipeUp       = { showHistorySheet = true },
@@ -119,14 +122,8 @@ fun KorexScreen(
                     isPanelOpen      = isPanelOpen,
                     onHamburgerClick = { isPanelOpen = true },
                     onClose          = { isPanelOpen = false },
-                    onSnippets       = {
-                        isPanelOpen      = false
-                        showSnippetSheet = true
-                    },
-                    onSettings       = {
-                        isPanelOpen  = false
-                        showSettings = true
-                    },
+                    onSnippets       = { isPanelOpen = false; showSnippetSheet = true },
+                    onSettings       = { isPanelOpen = false; showSettings = true },
                 )
             }
         }
@@ -134,10 +131,7 @@ fun KorexScreen(
 
     if (showNewSessionDialog) {
         NewSessionDialog(
-            onConfirm = { name ->
-                viewModel.createSession(name)
-                showNewSessionDialog = false
-            },
+            onConfirm = { name -> viewModel.createSession(name); showNewSessionDialog = false },
             onDismiss = { showNewSessionDialog = false },
         )
     }

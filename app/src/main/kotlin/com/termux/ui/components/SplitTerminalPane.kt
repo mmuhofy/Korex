@@ -1,9 +1,9 @@
 package com.termux.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -32,6 +32,7 @@ fun SplitTerminalPane(
     splitState: SplitScreenState?,
     getBridge: (String) -> TerminalBridge?,
     activeSessionId: String?,
+    fontSize: Int,                           // hot-applied to all panes
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     onSwipeUp: () -> Unit,
@@ -40,10 +41,9 @@ fun SplitTerminalPane(
     onExitSplit: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var totalWidth  by remember { mutableFloatStateOf(0f) }
-    var hDrag       by remember { mutableFloatStateOf(0f) }
-    var vDrag       by remember { mutableFloatStateOf(0f) }
-    var pinchSpan   by remember { mutableFloatStateOf(0f) }  // cumulative pinch delta
+    var totalWidth by remember { mutableFloatStateOf(0f) }
+    var hDrag      by remember { mutableFloatStateOf(0f) }
+    var vDrag      by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
@@ -56,14 +56,12 @@ fun SplitTerminalPane(
 
                 PaneContainer(
                     bridge   = getBridge(splitState.primarySessionId),
+                    fontSize = fontSize,
                     modifier = Modifier
                         .weight(splitState.splitRatio)
                         .fillMaxHeight()
-                        // Pinch IN on primary pane → exit split
                         .pointerInput(Unit) {
-                            detectTransformGesturesForSplit(
-                                onPinchIn = onExitSplit,
-                            )
+                            detectTransformGesturesForSplit(onPinchIn = onExitSplit)
                         },
                 )
 
@@ -75,23 +73,19 @@ fun SplitTerminalPane(
                         .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                         .pointerInput(Unit) {
                             detectDragGestures { _, dragAmount ->
-                                if (totalWidth > 0f) {
-                                    onRatioChange(dragAmount.x / totalWidth)
-                                }
+                                if (totalWidth > 0f) onRatioChange(dragAmount.x / totalWidth)
                             }
                         },
                 )
 
                 PaneContainer(
                     bridge   = getBridge(splitState.secondarySessionId!!),
+                    fontSize = fontSize,
                     modifier = Modifier
                         .weight(1f - splitState.splitRatio)
                         .fillMaxHeight()
-                        // Pinch IN on secondary pane → exit split
                         .pointerInput(Unit) {
-                            detectTransformGesturesForSplit(
-                                onPinchIn = onExitSplit,
-                            )
+                            detectTransformGesturesForSplit(onPinchIn = onExitSplit)
                         },
                 )
             }
@@ -125,11 +119,8 @@ fun SplitTerminalPane(
                             onVerticalDrag = { _, d -> vDrag += d },
                         )
                     }
-                    // Pinch OUT → enter split
                     .pointerInput(Unit) {
-                        detectTransformGesturesForSplit(
-                            onPinchOut = onEnterSplit,
-                        )
+                        detectTransformGesturesForSplit(onPinchOut = onEnterSplit)
                     },
             ) {
                 val bridge = activeSessionId?.let { getBridge(it) }
@@ -138,6 +129,7 @@ fun SplitTerminalPane(
                     TerminalViewCompose(
                         bridge     = bridge,
                         viewClient = viewClient,
+                        fontSize   = fontSize,
                         modifier   = Modifier.fillMaxSize(),
                     )
                 }
@@ -146,14 +138,6 @@ fun SplitTerminalPane(
     }
 }
 
-/**
- * Detects pinch gestures using two-pointer distance delta.
- * [onPinchOut] — fingers spreading apart (enter split)
- * [onPinchIn]  — fingers coming together (exit split)
- *
- * Uses raw pointer input to track two-finger span change.
- * Fires once when threshold is crossed, resets after.
- */
 private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTransformGesturesForSplit(
     onPinchOut: (() -> Unit)? = null,
     onPinchIn:  (() -> Unit)? = null,
@@ -163,7 +147,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTr
 
     awaitPointerEventScope {
         while (true) {
-            val event = awaitPointerEvent()
+            val event    = awaitPointerEvent()
             val pointers = event.changes.filter { it.pressed }
 
             if (pointers.size < 2) {
@@ -172,8 +156,8 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTr
                 continue
             }
 
-            val p1 = pointers[0].position
-            val p2 = pointers[1].position
+            val p1   = pointers[0].position
+            val p2   = pointers[1].position
             val span = kotlin.math.sqrt(
                 (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y)
             )
@@ -187,7 +171,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTr
             if (!fired) {
                 val delta = span - initialSpan
                 when {
-                    delta > PINCH_SPLIT_THRESHOLD  -> { onPinchOut?.invoke(); fired = true }
+                    delta >  PINCH_SPLIT_THRESHOLD -> { onPinchOut?.invoke(); fired = true }
                     delta < -PINCH_SPLIT_THRESHOLD -> { onPinchIn?.invoke();  fired = true }
                 }
             }
@@ -198,6 +182,7 @@ private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTr
 @Composable
 private fun PaneContainer(
     bridge: TerminalBridge?,
+    fontSize: Int,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
@@ -206,6 +191,7 @@ private fun PaneContainer(
             TerminalViewCompose(
                 bridge     = bridge,
                 viewClient = viewClient,
+                fontSize   = fontSize,
                 modifier   = Modifier.fillMaxSize(),
             )
         }
