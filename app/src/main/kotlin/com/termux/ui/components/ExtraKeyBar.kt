@@ -3,6 +3,7 @@ package com.termux.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -20,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.termux.terminal.TerminalBridge
 
+// ── Escape sequences ──────────────────────────────────────────────────────────
 private const val ESC   = "\u001B"
 private const val TAB   = "\u0009"
 private const val UP    = "\u001B[A"
@@ -28,78 +30,105 @@ private const val LEFT  = "\u001B[D"
 private const val RIGHT = "\u001B[C"
 private const val PGUP  = "\u001B[5~"
 private const val PGDN  = "\u001B[6~"
-private const val HOME  = "\u001B[1~"
-private const val END   = "\u001B[4~"
+private const val HOME  = "\u001B[H"
+private const val END   = "\u001B[F"
 
 private sealed class Key {
-    data class Char(val label: String, val code: String) : Key()
-    data class Special(val label: String) : Key()
+    /** A key that writes a fixed byte sequence to the pty. */
+    data class Seq(val label: String, val seq: String) : Key()
+    /** A sticky modifier toggle (CTRL / ALT). */
+    data class Modifier(val label: String) : Key()
 }
 
-private val ROW1 = listOf(
-    Key.Char("ESC",  ESC),
-    Key.Char("/",    "/"),
-    Key.Char("—",    "-"),
-    Key.Char("HOME", HOME),
-    Key.Char("↑",    UP),
-    Key.Char("END",  END),
-    Key.Char("PGUP", PGUP),
+private val ROW1 = listOf<Key>(
+    Key.Seq("ESC",  ESC),
+    Key.Seq("/",    "/"),
+    Key.Seq("-",    "-"),
+    Key.Seq("HOME", HOME),
+    Key.Seq("↑",    UP),
+    Key.Seq("END",  END),
+    Key.Seq("PGUP", PGUP),
 )
 
-private val ROW2 = listOf(
-    Key.Char("TAB",  TAB),
-    Key.Special("CTRL"),
-    Key.Special("ALT"),
-    Key.Char("←",    LEFT),
-    Key.Char("↓",    DOWN),
-    Key.Char("→",    RIGHT),
-    Key.Char("PGDN", PGDN),
+private val ROW2 = listOf<Key>(
+    Key.Seq("TAB",  TAB),
+    Key.Modifier("CTRL"),
+    Key.Modifier("ALT"),
+    Key.Seq("←",    LEFT),
+    Key.Seq("↓",    DOWN),
+    Key.Seq("→",    RIGHT),
+    Key.Seq("PGDN", PGDN),
 )
 
+/**
+ * Two-row extra key bar.
+ *
+ * CTRL / ALT are sticky toggles. When active they write to
+ * [TerminalBridge.ctrlDown] / [TerminalBridge.altDown] which are read by
+ * [KorexTerminalViewClient.readControlKey()] / [readAltKey()] on the NEXT
+ * keyboard event. TerminalView then applies the modifier internally and the
+ * flags are auto-consumed (one-shot).
+ *
+ * Sequence keys (arrows, ESC, etc.) bypass the keyboard pipeline and are
+ * written directly to the pty. When a modifier is active it is applied to
+ * the sequence (e.g. CTRL+↑ → CSI 1;5A) and consumed immediately.
+ */
 @Composable
 fun ExtraKeyBar(
     bridge: TerminalBridge?,
     modifier: Modifier = Modifier,
 ) {
+    // Mirror of viewClient flags so Compose recomposes on toggle
     var ctrlActive by remember { mutableStateOf(false) }
     var altActive  by remember { mutableStateOf(false) }
 
-    fun send(code: String) {
-        var out = code
-        if (ctrlActive) {
-            // Send CTRL+key: for single printable char use ctrl code,
-            // for sequences send ESC prefix (e.g. CTRL+arrow)
-            if (out.length == 1 && out[0].code in 0x40..0x7E) {
-                out = (out[0].code and 0x1f).toChar().toString()
-            } else if (out.startsWith(ESC)) {
-                // CTRL + arrow/function key — send as-is, terminal handles it
-                out = "\u001B[1;5${out.last()}"
+    fun setCtrl(v: Boolean) {
+        ctrlActive = v
+        bridge?.ctrlDown = v
+    }
+
+    fun setAlt(v: Boolean) {
+        altActive = v
+        bridge?.altDown = v
+    }
+
+    fun sendSeq(seq: String) {
+        var out = seq
+        // Apply CTRL modifier to escape sequences (arrows etc.)
+        if (ctrlActive && seq.length > 1 && seq.startsWith(ESC + "[")) {
+            // Convert "\u001B[X" → "\u001B[1;5X"  (CTRL modifier = param 5)
+            val letter = seq.last()
+            out = "\u001B[1;5$letter"
+            setCtrl(false)
+        } else if (ctrlActive) {
+            // Single-char seq with CTRL — convert to control character
+            if (seq.length == 1 && seq[0].code in 0x40..0x7E) {
+                out = (seq[0].code and 0x1F).toChar().toString()
             }
-            ctrlActive = false
+            setCtrl(false)
         }
+        // Apply ALT modifier: prefix with ESC
         if (altActive) {
             out = "$ESC$out"
-            altActive = false
+            setAlt(false)
         }
         bridge?.write(out)
     }
 
     fun handleKey(key: Key) {
         when (key) {
-            is Key.Special -> when (key.label) {
-                "CTRL" -> ctrlActive = !ctrlActive
-                "ALT"  -> altActive  = !altActive
+            is Key.Modifier -> when (key.label) {
+                "CTRL" -> setCtrl(!ctrlActive)
+                "ALT"  -> setAlt(!altActive)
             }
-            is Key.Char -> send(key.code)
+            is Key.Seq -> sendSeq(key.seq)
         }
     }
 
-    val bg = MaterialTheme.colorScheme.surface
-
-    androidx.compose.foundation.layout.Column(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(bg),
+            .background(MaterialTheme.colorScheme.surface),
     ) {
         KeyRow(ROW1, ctrlActive, altActive) { handleKey(it) }
         KeyRow(ROW2, ctrlActive, altActive) { handleKey(it) }
@@ -121,12 +150,12 @@ private fun KeyRow(
         verticalAlignment     = Alignment.CenterVertically,
     ) {
         keys.forEach { key ->
-            val isActive = (key is Key.Special && key.label == "CTRL" && ctrlActive) ||
-                           (key is Key.Special && key.label == "ALT"  && altActive)
+            val isActive = (key is Key.Modifier && key.label == "CTRL" && ctrlActive) ||
+                           (key is Key.Modifier && key.label == "ALT"  && altActive)
 
             val label = when (key) {
-                is Key.Char    -> key.label
-                is Key.Special -> key.label
+                is Key.Seq      -> key.label
+                is Key.Modifier -> key.label
             }
 
             val color: Color = if (isActive)

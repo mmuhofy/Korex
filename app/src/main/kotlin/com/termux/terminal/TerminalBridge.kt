@@ -2,7 +2,6 @@ package com.termux.terminal
 
 import android.content.Context
 import android.util.Log
-import com.termux.terminal.TerminalSession
 import com.termux.util.TERMINAL_FONT_SIZE_DEFAULT
 import com.termux.util.TERMINAL_FONT_SIZE_MAX
 import com.termux.util.TERMINAL_FONT_SIZE_MIN
@@ -27,6 +26,15 @@ class TerminalBridge(
 
     var fontSize: Int = TERMINAL_FONT_SIZE_DEFAULT
         private set
+
+    /**
+     * Sticky modifier flags set by ExtraKeyBar.
+     * Read and consumed (reset to false) by KorexTerminalViewClient.readControlKey()
+     * and readAltKey() on the next keyboard event processed by TerminalView.
+     * Volatile so reads/writes are visible across the Compose + View threads.
+     */
+    @Volatile var ctrlDown: Boolean = false
+    @Volatile var altDown: Boolean  = false
 
     fun scaleFontSize(factor: Float): Boolean {
         val next = (fontSize * factor).toInt()
