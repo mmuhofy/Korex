@@ -27,6 +27,22 @@
             </intent-filter>
         </activity>
 
+        <!--
+            DocumentsProvider — makes Korex appear in the Files app left drawer
+            under "Korex" so users can browse ~/.korex/ files directly.
+            Serves files from the app's internal filesDir.
+        -->
+        <provider
+            android:name=".KorexDocumentsProvider"
+            android:authorities="com.termux.documents"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
     </application>
 
 </manifest>
