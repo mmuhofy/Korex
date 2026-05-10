@@ -54,9 +54,17 @@ fun KorexScreen(
     var showThemes           by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
+
     LaunchedEffect(sessions) {
         if (sessions.isEmpty()) viewModel.createSession("Main")
         viewModel.onSessionsUpdated(sessions.map { it.id })
+    }
+
+    // Apply font size from settings to all active bridges whenever it changes.
+    // TerminalBridge.setFontSize() keeps the value; TerminalView picks it up
+    // on next render via mRenderer update in KorexTerminalViewClient.onScale.
+    LaunchedEffect(fontSize) {
+        viewModel.applyFontSizeToAllBridges(fontSize)
     }
 
     AnimatedContent(
@@ -107,7 +115,6 @@ fun KorexScreen(
                             splitState      = splitState,
                             getBridge       = { viewModel.getBridge(it) },
                             activeSessionId = activeSessionId,
-                            fontSize        = fontSize,
                             onSwipeLeft     = { viewModel.switchToNext() },
                             onSwipeRight    = { viewModel.switchToPrevious() },
                             onSwipeUp       = { showHistorySheet = true },

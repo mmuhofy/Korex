@@ -142,6 +142,11 @@ class SessionManager @Inject constructor(
 
     fun getBridge(id: String): TerminalBridge? = bridges[id]
 
+    /** Applies font size to all active terminal bridges. Called when settings change. */
+    fun applyFontSizeToAll(size: Int) {
+        bridges.values.forEach { it.setFontSize(size) }
+    }
+
     // ------------------------------------------------------------------ //
     // Internal
     // ------------------------------------------------------------------ //
@@ -149,7 +154,6 @@ class SessionManager @Inject constructor(
     private fun createBridge(id: String) {
         if (bridges.containsKey(id)) return
         scope.launch {
-            // Read preferred shell from DataStore — first() is a one-shot read
             val preferredShell = settingsDataStore.settings.first().defaultShell
             val client = KorexTerminalSessionClient(
                 context           = context,
@@ -170,10 +174,6 @@ class SessionManager @Inject constructor(
         }
     }
 
-    /**
-     * Resolves the preferred shell binary from the setting value ("zsh" / "bash").
-     * Falls back through zsh → bash → system sh if the preferred one isn't installed.
-     */
     private fun resolveShell(preferred: String): String {
         val binDir = File(context.filesDir, "usr/bin")
         val order  = if (preferred == "bash") listOf("bash", "zsh") else listOf("zsh", "bash")

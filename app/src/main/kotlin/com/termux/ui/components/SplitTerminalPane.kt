@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.termux.session.SplitScreenState
 import com.termux.terminal.TerminalBridge
 import com.termux.terminal.TerminalViewCompose
-import com.termux.util.PINCH_SPLIT_THRESHOLD
+
 
 private val DIVIDER_WIDTH = 4.dp
 

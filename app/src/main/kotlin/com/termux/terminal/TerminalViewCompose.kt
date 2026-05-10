@@ -36,12 +36,7 @@ fun TerminalViewCompose(
     val context = LocalContext.current
 
     val terminalView = remember(context) {
-        SwipeAwareTerminalView(
-            context = context,
-            onSwipeLeft = onSwipeLeft,
-            onSwipeRight = onSwipeRight,
-            onSwipeUp = onSwipeUp,
-        ).apply {
+        TerminalView(context, null).apply {
             setTerminalViewClient(viewClient)
             mRenderer = TerminalRenderer(bridge.fontSize, Typeface.MONOSPACE)
             attachSession(bridge.session)
@@ -51,6 +46,29 @@ fun TerminalViewCompose(
             bridge.sessionClient.terminalView = this
             (viewClient as? KorexTerminalViewClient)?.terminalView = this
             terminalViewRef = WeakReference(this)
+
+            // Attach fling detector via OnTouchListener so we don't block
+            // TerminalView's own scroll/zoom/copy handling.
+            // Strategy: gesture detector runs first; if it consumes (fast fling matched),
+            // we return true and TerminalView doesn't see the event.
+            // For all other gestures, we return false — TerminalView handles them natively.
+            if (onSwipeLeft != null || onSwipeRight != null || onSwipeUp != null) {
+                val gestureDetector = buildFlingDetector(
+                    context = context,
+                    onSwipeLeft = onSwipeLeft,
+                    onSwipeRight = onSwipeRight,
+                    onSwipeUp = onSwipeUp,
+                )
+                setOnTouchListener { v, event ->
+                    val consumed = gestureDetector.onTouchEvent(event)
+                    if (consumed) {
+                        true
+                    } else {
+                        // Pass to TerminalView's own touch handling
+                        v.onTouchEvent(event)
+                    }
+                }
+            }
         }
     }
 
@@ -66,82 +84,58 @@ fun TerminalViewCompose(
     )
 }
 
+/**
+ * Builds a GestureDetector that fires only on fast directional flings.
+ * Scroll, tap, long-press, and pinch are not consumed — they pass through to TerminalView.
+ */
+private fun buildFlingDetector(
+    context: Context,
+    onSwipeLeft: (() -> Unit)?,
+    onSwipeRight: (() -> Unit)?,
+    onSwipeUp: (() -> Unit)?,
+): GestureDetector = GestureDetector(
+    context,
+    object : GestureDetector.SimpleOnGestureListener() {
+        override fun onFling(
+            e1: MotionEvent?,
+            e2: MotionEvent,
+            velocityX: Float,
+            velocityY: Float,
+        ): Boolean {
+            val e1 = e1 ?: return false
+            val dX = e2.x - e1.x
+            val dY = e2.y - e1.y
+            val absVX = abs(velocityX)
+            val absVY = abs(velocityY)
+
+            // Swipe UP — vertical fling upward, vertical velocity dominates
+            if (onSwipeUp != null
+                && dY < -SWIPE_THRESHOLD_Y_PX
+                && absVY > SWIPE_VELOCITY_THRESHOLD
+                && absVY > absVX
+            ) {
+                onSwipeUp.invoke()
+                return true
+            }
+
+            // Swipe LEFT / RIGHT — horizontal fling, horizontal velocity dominates
+            if (abs(dX) > SWIPE_THRESHOLD_PX
+                && absVX > SWIPE_VELOCITY_THRESHOLD
+                && absVX > absVY
+            ) {
+                if (dX < 0) onSwipeLeft?.invoke()
+                else onSwipeRight?.invoke()
+                return true
+            }
+
+            return false
+        }
+    }
+)
+
 fun TerminalView.applyFontScale(bridge: TerminalBridge, scaleFactor: Float) {
     if (bridge.scaleFontSize(scaleFactor)) {
         mRenderer = TerminalRenderer(bridge.fontSize, Typeface.MONOSPACE)
         invalidate()
-    }
-}
-
-/**
- * TerminalView subclass that detects fast directional flings for session navigation
- * while letting all other touch events pass through to TerminalView's native handler.
- *
- * Strategy:
- * - Fast fling → session swipe (LEFT/RIGHT) or history panel (UP)
- * - Everything else → super.onTouchEvent() → TerminalView handles scroll, zoom, copy natively
- *
- * All callbacks are nullable — pass null for panes that don't need swipe navigation
- * (e.g. the secondary pane in split mode).
- */
-class SwipeAwareTerminalView(
-    context: Context,
-    private val onSwipeLeft: (() -> Unit)?,
-    private val onSwipeRight: (() -> Unit)?,
-    private val onSwipeUp: (() -> Unit)?,
-) : TerminalView(context, null) {
-
-    // Only attach gesture detector if at least one swipe callback is provided
-    private val gestureDetector: GestureDetector? =
-        if (onSwipeLeft != null || onSwipeRight != null || onSwipeUp != null) {
-            GestureDetector(
-                context,
-                object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onFling(
-                        e1: MotionEvent?,
-                        e2: MotionEvent,
-                        velocityX: Float,
-                        velocityY: Float,
-                    ): Boolean {
-                        val e1 = e1 ?: return false
-                        val dX = e2.x - e1.x
-                        val dY = e2.y - e1.y
-                        val absVX = abs(velocityX)
-                        val absVY = abs(velocityY)
-
-                        // Swipe UP — vertical fling upward, vertical velocity dominates
-                        if (onSwipeUp != null
-                            && dY < -SWIPE_THRESHOLD_Y_PX
-                            && absVY > SWIPE_VELOCITY_THRESHOLD
-                            && absVY > absVX
-                        ) {
-                            onSwipeUp.invoke()
-                            return true
-                        }
-
-                        // Swipe LEFT / RIGHT — horizontal fling, horizontal velocity dominates
-                        if (abs(dX) > SWIPE_THRESHOLD_PX
-                            && absVX > SWIPE_VELOCITY_THRESHOLD
-                            && absVX > absVY
-                        ) {
-                            if (dX < 0) onSwipeLeft?.invoke()
-                            else onSwipeRight?.invoke()
-                            return true
-                        }
-
-                        return false
-                    }
-                }
-            )
-        } else null
-
-    override fun onTouchEvent(event: MotionEvent): Boolean {
-        // Feed event to gesture detector first.
-        // If it consumes (fling matched), skip TerminalView so it doesn't
-        // also react to the same touch sequence.
-        if (gestureDetector?.onTouchEvent(event) == true) return true
-
-        // All other events (scroll, tap, long-press, pinch-zoom) → TerminalView native handler
-        return super.onTouchEvent(event)
     }
 }

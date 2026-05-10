@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.termux.data.session.SessionEntity
 import com.termux.session.SessionManager
 import com.termux.session.SplitScreenState
-import com.termux.util.SPLIT_RATIO_MIN
 import com.termux.util.SPLIT_RATIO_MAX
+import com.termux.util.SPLIT_RATIO_MIN
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,27 +52,28 @@ class MainViewModel @Inject constructor(
     fun getBridge(id: String) = sessionManager.getBridge(id)
     fun restoreOnStart() = sessionManager.restoreOnStart()
 
+    /**
+     * Applies the given font size to all active terminal bridges.
+     * Called from KorexScreen when settings.fontSize changes.
+     * TerminalView picks up the new size on next render.
+     */
+    fun applyFontSizeToAllBridges(size: Int) = sessionManager.applyFontSizeToAll(size)
+
     // ------------------------------------------------------------------ //
     // Split screen actions
     // ------------------------------------------------------------------ //
 
-    /**
-     * Enter split screen — primary is current active session,
-     * secondary is the next available session or a newly created one.
-     */
     fun enterSplit() {
-        val primaryId = activeSessionId.value ?: return
-        val sessions  = sessions.value
-        val secondaryId = sessions.firstOrNull { it.id != primaryId }?.id
+        val primaryId   = activeSessionId.value ?: return
+        val secondaryId = sessions.value.firstOrNull { it.id != primaryId }?.id
         if (secondaryId != null) {
             _splitState.value = SplitScreenState(
                 primarySessionId   = primaryId,
                 secondarySessionId = secondaryId,
             )
         } else {
-            // No other session — create one automatically
+            // No other session — create one, secondarySessionId wired in onSessionsUpdated
             sessionManager.createSession("Split")
-            // secondaryId will be set when sessions flow updates
             _splitState.value = SplitScreenState(primarySessionId = primaryId)
         }
     }
@@ -90,7 +91,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    /** Called when sessions update — wires the new session into split if pending. */
     fun onSessionsUpdated(sessionIds: List<String>) {
         val state = _splitState.value ?: return
         if (state.secondarySessionId == null) {
