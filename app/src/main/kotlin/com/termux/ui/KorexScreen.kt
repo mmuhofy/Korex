@@ -27,11 +27,6 @@ import com.termux.ui.components.SnippetSheet
 import com.termux.ui.components.SplitTerminalPane
 import com.termux.ui.components.TopBar
 
-// Screen index constants — used by AnimatedContent
-private const val SCREEN_MAIN     = 0
-private const val SCREEN_SETTINGS = 1
-private const val SCREEN_THEMES   = 2
-
 @Composable
 fun KorexScreen(
     viewModel: MainViewModel = hiltViewModel(),
@@ -48,13 +43,15 @@ fun KorexScreen(
     val history         by historyViewModel.history.collectAsStateWithLifecycle()
     val searchQuery     by historyViewModel.searchQuery.collectAsStateWithLifecycle()
     val settings        by settingsViewModel.settings.collectAsStateWithLifecycle()
-    val fontSize        = settings.fontSize.toInt()
+
+    val fontSize = settings.fontSize.toInt()
 
     var isPanelOpen          by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
     var showSnippetSheet     by remember { mutableStateOf(false) }
     var showHistorySheet     by remember { mutableStateOf(false) }
-    var currentScreen        by remember { mutableStateOf(SCREEN_MAIN) }
+    var showSettings         by remember { mutableStateOf(false) }
+    var showThemes           by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -63,23 +60,20 @@ fun KorexScreen(
     }
 
     AnimatedContent(
-        targetState = currentScreen,
+        targetState = when {
+            showThemes   -> 2
+            showSettings -> 1
+            else         -> 0
+        },
         transitionSpec = {
-            if (targetState > initialState) {
-                slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
-            } else {
-                slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
-            }
+            if (targetState > initialState) slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+            else                            slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
         },
         label = "screen_transition",
     ) { screen ->
         when (screen) {
-            SCREEN_THEMES   -> ThemeMarketplaceScreen(
-                onBack = { currentScreen = SCREEN_MAIN },
-            )
-            SCREEN_SETTINGS -> SettingsScreen(
-                onBack = { currentScreen = SCREEN_MAIN },
-            )
+            2 -> ThemeMarketplaceScreen(onBack = { showThemes = false })
+            1 -> SettingsScreen(onBack = { showSettings = false })
             else -> {
                 Box(
                     modifier = Modifier
@@ -134,8 +128,8 @@ fun KorexScreen(
                         onHamburgerClick = { isPanelOpen = true },
                         onClose          = { isPanelOpen = false },
                         onSnippets       = { isPanelOpen = false; showSnippetSheet = true },
-                        onThemes         = { isPanelOpen = false; currentScreen = SCREEN_THEMES },
-                        onSettings       = { isPanelOpen = false; currentScreen = SCREEN_SETTINGS },
+                        onThemes         = { isPanelOpen = false; showThemes = true },
+                        onSettings       = { isPanelOpen = false; showSettings = true },
                     )
                 }
             }
@@ -144,10 +138,7 @@ fun KorexScreen(
 
     if (showNewSessionDialog) {
         NewSessionDialog(
-            onConfirm = { name ->
-                viewModel.createSession(name)
-                showNewSessionDialog = false
-            },
+            onConfirm = { name -> viewModel.createSession(name); showNewSessionDialog = false },
             onDismiss = { showNewSessionDialog = false },
         )
     }
