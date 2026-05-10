@@ -16,19 +16,26 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val bootstrapViewModel: BootstrapViewModel by viewModels()
+    private val settingsViewModel: SettingsViewModel   by viewModels()
+    private val themeViewModel: ThemeViewModel         by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            KorexTheme {
-                val bootstrapState by bootstrapViewModel.state.collectAsStateWithLifecycle()
+            val bootstrapState by bootstrapViewModel.state.collectAsStateWithLifecycle()
+            val settings       by settingsViewModel.settings.collectAsStateWithLifecycle()
+            val activeTheme    by themeViewModel.activeTheme.collectAsStateWithLifecycle()
 
+            KorexTheme(
+                darkTheme   = settings.darkTheme,
+                activeTheme = activeTheme,          // drives dynamic color scheme
+            ) {
                 when (val state = bootstrapState) {
-                    is BootstrapState.Checking    -> BootstrapScreen("Checking…", 0)
-                    is BootstrapState.Installing  -> BootstrapScreen(state.message, state.percent)
-                    is BootstrapState.Done        -> KorexScreen()
-                    is BootstrapState.Error       -> BootstrapErrorScreen(
+                    is BootstrapState.Checking   -> BootstrapScreen("Checking…", 0)
+                    is BootstrapState.Installing -> BootstrapScreen(state.message, state.percent)
+                    is BootstrapState.Done       -> KorexScreen()
+                    is BootstrapState.Error      -> BootstrapErrorScreen(
                         message = state.message,
                         onRetry = { bootstrapViewModel.retry() },
                     )
@@ -42,11 +49,6 @@ class MainActivity : ComponentActivity() {
         showKeyboardWithDelay()
     }
 
-    /**
-     * Request focus on the terminal view and show the soft keyboard.
-     * Matches Termux's setSoftKeyboardState() behavior — always show on resume
-     * with a short delay to ensure the view is ready.
-     */
     private fun showKeyboardWithDelay() {
         val view = terminalViewRef.get() ?: return
         view.requestFocus()

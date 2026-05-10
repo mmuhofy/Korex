@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -46,129 +45,36 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.termux.data.theme.ThemeEntity
 
-// ── Placeholder model — replaced by ThemeEntity in next step ─────────────────
-data class ThemePreview(
-    val id: String,
-    val name: String,
-    val author: String,
-    val background: Color,
-    val surface: Color,
-    val accent: Color,
-    val text: Color,
-    val isInstalled: Boolean = false,
-    val isActive: Boolean    = false,
-)
-
-// Built-in themes — hardcoded until ThemeRepository is wired
-private val BUILT_IN_THEMES = listOf(
-    ThemePreview(
-        id         = "korex-dark",
-        name       = "Korex Dark",
-        author     = "Korex",
-        background = Color(0xFF0D1117),
-        surface    = Color(0xFF161B22),
-        accent     = Color(0xFF58A6FF),
-        text       = Color(0xFFE6EDF3),
-        isInstalled = true,
-        isActive    = true,
-    ),
-    ThemePreview(
-        id         = "korex-light",
-        name       = "Korex Light",
-        author     = "Korex",
-        background = Color(0xFFFFFFFF),
-        surface    = Color(0xFFF6F8FA),
-        accent     = Color(0xFF0969DA),
-        text       = Color(0xFF1F2328),
-        isInstalled = true,
-    ),
-)
-
-private val DISCOVER_THEMES = listOf(
-    ThemePreview(
-        id         = "dracula",
-        name       = "Dracula",
-        author     = "dracula-theme",
-        background = Color(0xFF282A36),
-        surface    = Color(0xFF343746),
-        accent     = Color(0xFFBD93F9),
-        text       = Color(0xFFF8F8F2),
-    ),
-    ThemePreview(
-        id         = "nord",
-        name       = "Nord",
-        author     = "arcticicestudio",
-        background = Color(0xFF2E3440),
-        surface    = Color(0xFF3B4252),
-        accent     = Color(0xFF88C0D0),
-        text       = Color(0xFFECEFF4),
-    ),
-    ThemePreview(
-        id         = "tokyo-night",
-        name       = "Tokyo Night",
-        author     = "enkia",
-        background = Color(0xFF1A1B2E),
-        surface    = Color(0xFF24283B),
-        accent     = Color(0xFF7AA2F7),
-        text       = Color(0xFFC0CAF5),
-    ),
-    ThemePreview(
-        id         = "solarized-dark",
-        name       = "Solarized Dark",
-        author     = "altercation",
-        background = Color(0xFF002B36),
-        surface    = Color(0xFF073642),
-        accent     = Color(0xFF268BD2),
-        text       = Color(0xFF839496),
-    ),
-    ThemePreview(
-        id         = "one-dark",
-        name       = "One Dark",
-        author     = "atom",
-        background = Color(0xFF282C34),
-        surface    = Color(0xFF31353F),
-        accent     = Color(0xFF61AFEF),
-        text       = Color(0xFFABB2BF),
-    ),
-    ThemePreview(
-        id         = "monokai",
-        name       = "Monokai",
-        author     = "monokai",
-        background = Color(0xFF272822),
-        surface    = Color(0xFF383830),
-        accent     = Color(0xFFA6E22E),
-        text       = Color(0xFFF8F8F2),
-    ),
-    ThemePreview(
-        id         = "gruvbox",
-        name       = "Gruvbox Dark",
-        author     = "morhetz",
-        background = Color(0xFF282828),
-        surface    = Color(0xFF3C3836),
-        accent     = Color(0xFFD79921),
-        text       = Color(0xFFEBDBB2),
-    ),
-    ThemePreview(
-        id         = "catppuccin",
-        name       = "Catppuccin Mocha",
-        author     = "catppuccin",
-        background = Color(0xFF1E1E2E),
-        surface    = Color(0xFF313244),
-        accent     = Color(0xFFCBA6F7),
-        text       = Color(0xFFCDD6F4),
-    ),
+// ── Discover catalogue — not in DB, shown in Discover tab ────────────────────
+// Install → ThemeViewModel.install() → saved to Room → appears in Installed tab
+private val DISCOVER_CATALOGUE = listOf(
+    ThemeEntity(id="dracula",      name="Dracula",          author="dracula-theme",  background="#FF282A36", surface="#FF343746", accent="#FFBD93F9", text="#FFF8F8F2"),
+    ThemeEntity(id="nord",         name="Nord",             author="arcticicestudio", background="#FF2E3440", surface="#FF3B4252", accent="#FF88C0D0", text="#FFECEFF4"),
+    ThemeEntity(id="tokyo-night",  name="Tokyo Night",      author="enkia",           background="#FF1A1B2E", surface="#FF24283B", accent="#FF7AA2F7", text="#FFC0CAF5"),
+    ThemeEntity(id="solarized",    name="Solarized Dark",   author="altercation",     background="#FF002B36", surface="#FF073642", accent="#FF268BD2", text="#FF839496"),
+    ThemeEntity(id="one-dark",     name="One Dark",         author="atom",            background="#FF282C34", surface="#FF31353F", accent="#FF61AFEF", text="#FFABB2BF"),
+    ThemeEntity(id="monokai",      name="Monokai",          author="monokai",         background="#FF272822", surface="#FF383830", accent="#FFA6E22E", text="#FFF8F8F2"),
+    ThemeEntity(id="gruvbox",      name="Gruvbox Dark",     author="morhetz",         background="#FF282828", surface="#FF3C3836", accent="#FFD79921", text="#FFEBDBB2"),
+    ThemeEntity(id="catppuccin",   name="Catppuccin Mocha", author="catppuccin",      background="#FF1E1E2E", surface="#FF313244", accent="#FFCBA6F7", text="#FFCDD6F4"),
 )
 
 @Composable
 fun ThemeMarketplaceScreen(
     onBack: () -> Unit,
+    viewModel: ThemeViewModel = hiltViewModel(),
 ) {
-    var selectedTab  by remember { mutableIntStateOf(0) }
-    // Active theme id — will come from ThemeViewModel in next step
-    var activeThemeId by remember { mutableStateOf("korex-dark") }
-    // Installed set — will come from Room in next step
-    var installed by remember { mutableStateOf(setOf("korex-dark", "korex-light")) }
+    val installed   by viewModel.installedThemes.collectAsStateWithLifecycle()
+    val activeTheme by viewModel.activeTheme.collectAsStateWithLifecycle()
+    var selectedTab by remember { mutableIntStateOf(0) }
+
+    val installedIds = installed.map { it.id }.toSet()
+
+    // Discover tab hides already-installed themes
+    val discoverList = DISCOVER_CATALOGUE.filter { it.id !in installedIds }
 
     Column(
         modifier = Modifier
@@ -238,29 +144,32 @@ fun ThemeMarketplaceScreen(
         }
 
         // ── Content ───────────────────────────────────────────────────────
-        val displayList = if (selectedTab == 0) {
-            BUILT_IN_THEMES.map { t ->
-                t.copy(
-                    isInstalled = t.id in installed,
-                    isActive    = t.id == activeThemeId,
+        val displayList = if (selectedTab == 0) installed else discoverList
+
+        if (displayList.isEmpty()) {
+            Box(
+                modifier         = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text  = if (selectedTab == 0) "No themes installed." else "All themes installed!",
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         } else {
-            DISCOVER_THEMES.map { t ->
-                t.copy(isInstalled = t.id in installed)
-            }
-        }
-
-        LazyColumn(
-            contentPadding  = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(displayList, key = { it.id }) { theme ->
-                ThemeCard(
-                    theme     = theme,
-                    onApply   = { activeThemeId = it },
-                    onInstall = { installed = installed + it },
-                )
+            LazyColumn(
+                contentPadding      = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                items(displayList, key = { it.id }) { theme ->
+                    ThemeCard(
+                        theme     = theme,
+                        isActive  = theme.id == activeTheme?.id,
+                        onApply   = { viewModel.setActive(theme.id) },
+                        onInstall = { viewModel.install(theme) },
+                    )
+                }
             }
         }
     }
@@ -268,14 +177,19 @@ fun ThemeMarketplaceScreen(
 
 @Composable
 private fun ThemeCard(
-    theme: ThemePreview,
-    onApply: (String) -> Unit,
-    onInstall: (String) -> Unit,
+    theme: ThemeEntity,
+    isActive: Boolean,
+    onApply: () -> Unit,
+    onInstall: () -> Unit,
 ) {
+    val bg     = theme.background.toComposeColor()
+    val accent = theme.accent.toComposeColor()
+    val text   = theme.text.toComposeColor()
+
     val borderColor by animateColorAsState(
-        targetValue = if (theme.isActive) theme.accent else Color.Transparent,
-        animationSpec = tween(200),
-        label = "border",
+        targetValue   = if (isActive) accent else Color.Transparent,
+        animationSpec = tween(220),
+        label         = "border",
     )
 
     Column(
@@ -283,15 +197,8 @@ private fun ThemeCard(
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
             .background(MaterialTheme.colorScheme.surface)
-            .border(
-                width = 1.5.dp,
-                color = borderColor,
-                shape = RoundedCornerShape(12.dp),
-            )
-            .clickable {
-                if (theme.isInstalled) onApply(theme.id)
-                else onInstall(theme.id)
-            }
+            .border(1.5.dp, borderColor, RoundedCornerShape(12.dp))
+            .clickable { if (theme.isInstalled) onApply() else onInstall() }
             .padding(14.dp),
     ) {
         Row(
@@ -307,39 +214,36 @@ private fun ThemeCard(
                     color      = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    text  = theme.author,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                    text     = theme.author,
+                    style    = MaterialTheme.typography.bodySmall,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
                     fontSize = 11.sp,
                 )
             }
 
-            // Action button
             when {
-                theme.isActive -> {
-                    // Active checkmark
+                isActive -> {
                     Box(
-                        modifier = Modifier
+                        modifier         = Modifier
                             .size(28.dp)
                             .clip(CircleShape)
-                            .background(theme.accent.copy(alpha = 0.15f)),
+                            .background(accent.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
                             imageVector        = Icons.Rounded.Check,
                             contentDescription = "Active",
-                            tint               = theme.accent,
+                            tint               = accent,
                             modifier           = Modifier.size(15.dp),
                         )
                     }
                 }
                 theme.isInstalled -> {
-                    // Apply button
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-                            .clickable { onApply(theme.id) }
+                            .clickable { onApply() }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Text(
@@ -350,12 +254,11 @@ private fun ThemeCard(
                     }
                 }
                 else -> {
-                    // Install button
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
                             .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable { onInstall(theme.id) }
+                            .clickable { onInstall() }
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                     ) {
                         Row(
@@ -382,47 +285,39 @@ private fun ThemeCard(
         Spacer(modifier = Modifier.height(12.dp))
 
         // ── Terminal preview ──────────────────────────────────────────────
-        TerminalPreview(theme = theme)
-    }
-}
-
-/**
- * Mini terminal preview — shows what the theme looks like in a real terminal.
- * Static text, color-coded with the theme's actual palette.
- */
-@Composable
-private fun TerminalPreview(theme: ThemePreview) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(theme.background)
-            .padding(10.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            // Prompt line
-            Row {
-                Text("~ ", color = theme.accent,     fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                Text("❯ ", color = theme.accent,     fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                Text("ls", color = theme.text,       fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-            }
-            // Output line
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("src",      color = theme.accent,              fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                Text("README.md",color = theme.text,                fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                Text(".env",     color = theme.text.copy(alpha=0.5f),fontSize= 11.sp, fontFamily = FontFamily.Monospace)
-            }
-            // Next prompt
-            Row {
-                Text("~ ", color = theme.accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                Text("❯ ", color = theme.accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
-                // Blinking cursor simulation
-                Box(
-                    modifier = Modifier
-                        .size(width = 7.dp, height = 13.dp)
-                        .background(theme.accent.copy(alpha = 0.8f)),
-                )
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(bg)
+                .padding(10.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Row {
+                    Text("~ ",  color = accent,              fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text("❯ ",  color = accent,              fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text("ls",  color = text,                fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("src",       color = accent,                    fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text("README.md", color = text,                      fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text(".env",      color = text.copy(alpha = 0.5f),   fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                }
+                Row {
+                    Text("~ ", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Text("❯ ", color = accent, fontSize = 11.sp, fontFamily = FontFamily.Monospace)
+                    Box(
+                        modifier = Modifier
+                            .size(width = 7.dp, height = 13.dp)
+                            .background(accent.copy(alpha = 0.8f)),
+                    )
+                }
             }
         }
     }
 }
+
+/** Parses "#AARRGGBB" or "#RRGGBB" hex string to Compose Color. */
+private fun String.toComposeColor(): Color =
+    try { Color(android.graphics.Color.parseColor(this)) }
+    catch (_: Exception) { Color.White }
