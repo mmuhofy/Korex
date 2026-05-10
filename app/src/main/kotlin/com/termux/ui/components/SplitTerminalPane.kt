@@ -2,8 +2,6 @@ package com.termux.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -23,16 +21,15 @@ import com.termux.session.SplitScreenState
 import com.termux.terminal.TerminalBridge
 import com.termux.terminal.TerminalViewCompose
 import com.termux.util.PINCH_SPLIT_THRESHOLD
-import com.termux.util.SWIPE_THRESHOLD_PX
 
 private val DIVIDER_WIDTH = 4.dp
 
+// UNTESTED — verify before use
 @Composable
 fun SplitTerminalPane(
     splitState: SplitScreenState?,
     getBridge: (String) -> TerminalBridge?,
     activeSessionId: String?,
-    fontSize: Int,                           // hot-applied to all panes
     onSwipeLeft: () -> Unit,
     onSwipeRight: () -> Unit,
     onSwipeUp: () -> Unit,
@@ -42,8 +39,6 @@ fun SplitTerminalPane(
     modifier: Modifier = Modifier,
 ) {
     var totalWidth by remember { mutableFloatStateOf(0f) }
-    var hDrag      by remember { mutableFloatStateOf(0f) }
-    var vDrag      by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
@@ -54,18 +49,21 @@ fun SplitTerminalPane(
             // ── Split mode — two panes side by side ──────────────────────
             Row(modifier = Modifier.fillMaxSize()) {
 
+                // Primary pane — has session swipe and swipe-up (history)
+                // Pinch IN on primary → exit split (handled inside SwipeAwareTerminalView
+                // via onScale callback — see note below)
                 PaneContainer(
-                    bridge   = getBridge(splitState.primarySessionId),
-                    fontSize = fontSize,
+                    bridge = getBridge(splitState.primarySessionId),
+                    onSwipeLeft = onSwipeLeft,
+                    onSwipeRight = onSwipeRight,
+                    onSwipeUp = onSwipeUp,
+                    onPinchIn = onExitSplit,
                     modifier = Modifier
                         .weight(splitState.splitRatio)
-                        .fillMaxHeight()
-                        .pointerInput(Unit) {
-                            detectTransformGesturesForSplit(onPinchIn = onExitSplit)
-                        },
+                        .fillMaxHeight(),
                 )
 
-                // Draggable divider
+                // Draggable divider — Compose gesture here is fine, it's not a terminal surface
                 Box(
                     modifier = Modifier
                         .width(DIVIDER_WIDTH)
@@ -73,127 +71,95 @@ fun SplitTerminalPane(
                         .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                         .pointerInput(Unit) {
                             detectDragGestures { _, dragAmount ->
-                                if (totalWidth > 0f) onRatioChange(dragAmount.x / totalWidth)
+                                if (totalWidth > 0f) {
+                                    onRatioChange(dragAmount.x / totalWidth)
+                                }
                             }
                         },
                 )
 
+                // Secondary pane — no session swipe, pinch IN → exit split
                 PaneContainer(
-                    bridge   = getBridge(splitState.secondarySessionId!!),
-                    fontSize = fontSize,
+                    bridge = getBridge(splitState.secondarySessionId!!),
+                    onSwipeLeft = null,
+                    onSwipeRight = null,
+                    onSwipeUp = null,
+                    onPinchIn = onExitSplit,
                     modifier = Modifier
                         .weight(1f - splitState.splitRatio)
-                        .fillMaxHeight()
-                        .pointerInput(Unit) {
-                            detectTransformGesturesForSplit(onPinchIn = onExitSplit)
-                        },
+                        .fillMaxHeight(),
                 )
             }
         } else {
-            // ── Single pane — swipe + pinch OUT to enter split ───────────
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(activeSessionId) {
-                        detectHorizontalDragGestures(
-                            onDragStart      = { hDrag = 0f },
-                            onDragEnd        = {
-                                when {
-                                    hDrag < -SWIPE_THRESHOLD_PX -> onSwipeLeft()
-                                    hDrag > SWIPE_THRESHOLD_PX  -> onSwipeRight()
-                                }
-                                hDrag = 0f
-                            },
-                            onDragCancel     = { hDrag = 0f },
-                            onHorizontalDrag = { _, d -> hDrag += d },
-                        )
-                    }
-                    .pointerInput(activeSessionId) {
-                        detectVerticalDragGestures(
-                            onDragStart    = { vDrag = 0f },
-                            onDragEnd      = {
-                                if (vDrag < -SWIPE_THRESHOLD_PX) onSwipeUp()
-                                vDrag = 0f
-                            },
-                            onDragCancel   = { vDrag = 0f },
-                            onVerticalDrag = { _, d -> vDrag += d },
-                        )
-                    }
-                    .pointerInput(Unit) {
-                        detectTransformGesturesForSplit(onPinchOut = onEnterSplit)
-                    },
-            ) {
-                val bridge = activeSessionId?.let { getBridge(it) }
-                if (bridge != null) {
-                    val viewClient = rememberTerminalViewClient(bridge)
-                    TerminalViewCompose(
-                        bridge     = bridge,
-                        viewClient = viewClient,
-                        fontSize   = fontSize,
-                        modifier   = Modifier.fillMaxSize(),
-                    )
-                }
-            }
-        }
-    }
-}
-
-private suspend fun androidx.compose.ui.input.pointer.PointerInputScope.detectTransformGesturesForSplit(
-    onPinchOut: (() -> Unit)? = null,
-    onPinchIn:  (() -> Unit)? = null,
-) {
-    var initialSpan = 0f
-    var fired       = false
-
-    awaitPointerEventScope {
-        while (true) {
-            val event    = awaitPointerEvent()
-            val pointers = event.changes.filter { it.pressed }
-
-            if (pointers.size < 2) {
-                initialSpan = 0f
-                fired       = false
-                continue
-            }
-
-            val p1   = pointers[0].position
-            val p2   = pointers[1].position
-            val span = kotlin.math.sqrt(
-                (p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y)
+            // ── Single pane ──────────────────────────────────────────────
+            // All gestures handled inside SwipeAwareTerminalView natively.
+            // Pinch OUT to enter split is handled via KorexTerminalViewClient.onScale.
+            // (See note at bottom of file.)
+            PaneContainer(
+                bridge = activeSessionId?.let { getBridge(it) },
+                onSwipeLeft = onSwipeLeft,
+                onSwipeRight = onSwipeRight,
+                onSwipeUp = onSwipeUp,
+                onPinchIn = null,
+                onPinchOut = onEnterSplit,
+                modifier = Modifier.fillMaxSize(),
             )
-
-            if (initialSpan == 0f) {
-                initialSpan = span
-                fired       = false
-                continue
-            }
-
-            if (!fired) {
-                val delta = span - initialSpan
-                when {
-                    delta >  PINCH_SPLIT_THRESHOLD -> { onPinchOut?.invoke(); fired = true }
-                    delta < -PINCH_SPLIT_THRESHOLD -> { onPinchIn?.invoke();  fired = true }
-                }
-            }
         }
     }
 }
 
+/**
+ * Single terminal pane wrapper.
+ *
+ * Swipe callbacks are passed through to [TerminalViewCompose] → [SwipeAwareTerminalView].
+ * Pinch callbacks are wired via [KorexTerminalViewClient.onScale]:
+ *   - scale > threshold → [onPinchOut] (enter split)
+ *   - scale < threshold → [onPinchIn]  (exit split)
+ *
+ * All callbacks are nullable — pass null to disable that gesture for this pane.
+ */
 @Composable
 private fun PaneContainer(
     bridge: TerminalBridge?,
-    fontSize: Int,
+    onSwipeLeft: (() -> Unit)?,
+    onSwipeRight: (() -> Unit)?,
+    onSwipeUp: (() -> Unit)?,
+    onPinchIn: (() -> Unit)? = null,
+    onPinchOut: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.background(MaterialTheme.colorScheme.background)) {
         if (bridge != null) {
-            val viewClient = rememberTerminalViewClient(bridge)
+            val viewClient = rememberTerminalViewClient(
+                bridge = bridge,
+                onPinchIn = onPinchIn,
+                onPinchOut = onPinchOut,
+            )
             TerminalViewCompose(
-                bridge     = bridge,
+                bridge = bridge,
                 viewClient = viewClient,
-                fontSize   = fontSize,
-                modifier   = Modifier.fillMaxSize(),
+                onSwipeLeft = onSwipeLeft,
+                onSwipeRight = onSwipeRight,
+                onSwipeUp = onSwipeUp,
+                modifier = Modifier.fillMaxSize(),
             )
         }
     }
 }
+
+/*
+ * NOTE — Pinch / split gesture strategy:
+ *
+ * TerminalView's native pinch handler calls TerminalViewClient.onScale(scaleFactor).
+ * KorexTerminalViewClient.onScale already handles font size scaling.
+ * We extend it to also fire onPinchOut / onPinchIn callbacks when the cumulative
+ * scale crosses a threshold (PINCH_SPLIT_THRESHOLD from Constants).
+ *
+ * This means:
+ *   - We don't block TerminalView's pinch handling
+ *   - Split/exit-split is triggered by the same pinch gesture
+ *   - No Compose gesture layer needed on top of TerminalView
+ *
+ * KorexTerminalViewClient needs onPinchIn / onPinchOut callbacks added — see
+ * RememberTerminalViewClient.kt and KorexTerminalViewClient.kt updates.
+ */

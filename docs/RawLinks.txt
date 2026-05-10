@@ -12,10 +12,14 @@ https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/ter
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/history/CommandHistoryDao.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/history/CommandHistoryRepositoryImpl.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/SettingsDataStore.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/theme/ThemeEntity.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/theme/ThemeDao.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/data/theme/ThemeRepositoryImpl.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/domain/Repository.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/domain/SessionRepository.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/domain/SnippetRepository.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/domain/CommandHistoryRepository.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/domain/ThemeRepository.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/MainActivity.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/theme/Color.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/theme/Type.kt
@@ -39,6 +43,8 @@ https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/ter
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/BootstrapErrorScreen.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/SettingsScreen.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/SettingsViewModel.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/ThemeMarketplaceScreen.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/ui/ThemeViewModel.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/session/SessionManager.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/session/SplitScreenState.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/terminal/TerminalBridge.kt
@@ -51,6 +57,7 @@ https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/ter
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/di/AppModule.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/util/Constants.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/KorexApplication.kt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/kotlin/com/termux/KorexDocumentsProvider.kt
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/res/drawable-v24/ic_launcher_foreground.xml
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/res/drawable/ic_launcher_background.xml
 https://raw.githubusercontent.com/mmuhofy/Korex/main/app/src/main/res/font/inter_bold.ttf
@@ -282,7 +289,5 @@ https://raw.githubusercontent.com/mmuhofy/Korex/main/core/terminal-view/src/main
 https://raw.githubusercontent.com/mmuhofy/Korex/main/core/terminal-view/src/main/res/drawable/text_select_handle_right_material.xml
 https://raw.githubusercontent.com/mmuhofy/Korex/main/core/terminal-view/src/main/res/values/strings.xml
 https://raw.githubusercontent.com/mmuhofy/Korex/main/debug.keystore
-https://raw.githubusercontent.com/mmuhofy/Korex/main/proje_yapisi.txt
-https://raw.githubusercontent.com/mmuhofy/Korex/main/rename-package.py
-https://raw.githubusercontent.com/mmuhofy/Korex/main/STRUCTURE.sh
 https://raw.githubusercontent.com/mmuhofy/Korex/main/index.txt
+https://raw.githubusercontent.com/mmuhofy/Korex/main/rename-package.py
