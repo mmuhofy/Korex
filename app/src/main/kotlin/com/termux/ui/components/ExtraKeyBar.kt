@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.termux.terminal.TerminalBridge
+import com.termux.ui.theme.KorexBackground
 
 // ── Escape sequences ──────────────────────────────────────────────────────────
 private const val ESC   = "\u001B"
@@ -128,7 +129,7 @@ fun ExtraKeyBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface),
+            .background(KorexBackground),   // same as terminal — no visual break
     ) {
         KeyRow(ROW1, ctrlActive, altActive) { handleKey(it) }
         KeyRow(ROW2, ctrlActive, altActive) { handleKey(it) }

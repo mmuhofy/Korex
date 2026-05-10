@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.termux.data.session.SessionEntity
 import com.termux.data.session.SessionStatus
+import com.termux.ui.theme.KorexBackground
 import com.termux.ui.theme.KorexStatusActive
 import com.termux.ui.theme.KorexStatusBackground
 import com.termux.ui.theme.KorexStatusCrashed
@@ -79,74 +80,87 @@ fun TopBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
+            // Same color as terminal background — no visual separation
+            .background(KorexBackground)
             .statusBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 10.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Hamburger — opens left panel
+        // ── Hamburger ────────────────────────────────────────────────────
         Icon(
             imageVector        = Icons.Rounded.Menu,
             contentDescription = "Open menu",
-            tint               = MaterialTheme.colorScheme.onSurface,
+            tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
             modifier           = Modifier
-                .size(24.dp)
+                .size(22.dp)
                 .clickable { onHamburgerClick() },
         )
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
+        // ── App title ────────────────────────────────────────────────────
         Text(
             text       = "Korex",
             style      = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
             color      = MaterialTheme.colorScheme.onSurface,
+            fontSize   = 17.sp,
         )
 
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Active session chip — tap to open session sheet
-        Row(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .clickable { showSheet = true }
-                .padding(horizontal = 10.dp, vertical = 5.dp),
-            verticalAlignment          = Alignment.CenterVertically,
-            horizontalArrangement      = Arrangement.spacedBy(6.dp),
-        ) {
-            Icon(
-                imageVector        = Icons.Rounded.Terminal,
-                contentDescription = null,
-                tint               = MaterialTheme.colorScheme.primary,
-                modifier           = Modifier.size(14.dp),
-            )
+        // ── Active session name — subtle, secondary ───────────────────
+        if (!activeSessionName.isNullOrBlank()) {
+            Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text     = activeSessionName ?: "Session",
-                style    = MaterialTheme.typography.labelSmall,
-                color    = MaterialTheme.colorScheme.onSurface,
+                text     = activeSessionName,
+                style    = MaterialTheme.typography.bodySmall,
+                color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
             )
         }
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
-        // Split screen toggle button
+        // ── Session list icon — no chip, just icon ────────────────────
+        Icon(
+            imageVector        = Icons.Rounded.Terminal,
+            contentDescription = "Sessions",
+            tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+            modifier           = Modifier
+                .size(22.dp)
+                .clickable { showSheet = true },
+        )
+
+        Spacer(modifier = Modifier.width(18.dp))
+
+        // ── Split screen toggle ───────────────────────────────────────
         Icon(
             imageVector        = Icons.Rounded.SpaceDashboard,
-            contentDescription = if (isSplit) "Exit split screen" else "Enter split screen",
+            contentDescription = if (isSplit) "Exit split" else "Split screen",
             tint               = if (isSplit)
                 MaterialTheme.colorScheme.primary
             else
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+            modifier           = Modifier
+                .size(20.dp)
+                .clickable { onToggleSplit() },
+        )
+
+        Spacer(modifier = Modifier.width(18.dp))
+
+        // ── New session ───────────────────────────────────────────────
+        Icon(
+            imageVector        = Icons.Rounded.Add,
+            contentDescription = "New session",
+            tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
             modifier           = Modifier
                 .size(22.dp)
-                .clickable { onToggleSplit() },
+                .clickable { onNewSession() },
         )
     }
 
+    // ── Session bottom sheet ──────────────────────────────────────────────
     if (showSheet) {
         ModalBottomSheet(
             onDismissRequest = { showSheet = false },
@@ -156,17 +170,17 @@ fun TopBar(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 24.dp),
+                    .padding(bottom = 32.dp),
             ) {
                 Text(
                     text     = "Sessions",
-                    style    = MaterialTheme.typography.titleSmall,
-                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    style    = MaterialTheme.typography.labelMedium,
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                 )
 
                 HorizontalDivider(
-                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
                     thickness = 0.5.dp,
                 )
 
@@ -176,39 +190,38 @@ fun TopBar(
                         isActive = session.id == activeSessionId,
                         onClick  = {
                             onSessionClick(session.id)
-                            scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                showSheet = false
-                            }
+                            scope.launch { sheetState.hide() }
+                                .invokeOnCompletion { showSheet = false }
                         },
                         onClose  = { onSessionClose(session.id) },
-                        onRename = { newName -> onSessionRename(session.id, newName) },
+                        onRename = { onSessionRename(session.id, it) },
                         onPin    = { onSessionPin(session.id, !session.isPinned) },
                     )
                 }
 
                 HorizontalDivider(
-                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                    color     = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
                     thickness = 0.5.dp,
                 )
 
+                // New session row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
                             onNewSession()
-                            scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                showSheet = false
-                            }
+                            scope.launch { sheetState.hide() }
+                                .invokeOnCompletion { showSheet = false }
                         }
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
                     verticalAlignment     = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
                     Icon(
                         imageVector        = Icons.Rounded.Add,
                         contentDescription = "New session",
                         tint               = MaterialTheme.colorScheme.primary,
-                        modifier           = Modifier.size(20.dp),
+                        modifier           = Modifier.size(18.dp),
                     )
                     Text(
                         text  = "New Session",
@@ -221,7 +234,7 @@ fun TopBar(
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SessionSheetItem(
     session: SessionEntity,
@@ -240,20 +253,21 @@ private fun SessionSheetItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    if (isActive) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.2f)
-                    else MaterialTheme.colorScheme.surface
+                    if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
+                    else MaterialTheme.colorScheme.surface,
                 )
                 .combinedClickable(
                     onClick     = onClick,
                     onLongClick = { menuExpanded = true },
                 )
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment     = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
+            // Status dot
             Box(
                 modifier = Modifier
-                    .size(8.dp)
+                    .size(7.dp)
                     .clip(RoundedCornerShape(50))
                     .background(session.status.toColor()),
             )
@@ -265,7 +279,7 @@ private fun SessionSheetItem(
                         style      = MaterialTheme.typography.bodyMedium,
                         color      = if (isActive) MaterialTheme.colorScheme.primary
                                      else MaterialTheme.colorScheme.onSurface,
-                        fontWeight = if (isActive) FontWeight.SemiBold else FontWeight.Normal,
+                        fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
                         maxLines   = 1,
                         overflow   = TextOverflow.Ellipsis,
                     )
@@ -273,15 +287,17 @@ private fun SessionSheetItem(
                         Icon(
                             imageVector        = Icons.Rounded.PushPin,
                             contentDescription = "Pinned",
-                            tint               = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                            modifier           = Modifier.padding(start = 6.dp).size(12.dp),
+                            tint               = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                            modifier           = Modifier
+                                .padding(start = 6.dp)
+                                .size(11.dp),
                         )
                     }
                 }
                 Text(
                     text     = session.cwd,
                     style    = MaterialTheme.typography.bodySmall,
-                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 11.sp,
@@ -291,9 +307,9 @@ private fun SessionSheetItem(
             Icon(
                 imageVector        = Icons.Rounded.Close,
                 contentDescription = "Close",
-                tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                tint               = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f),
                 modifier           = Modifier
-                    .size(16.dp)
+                    .size(15.dp)
                     .clickable { onClose() },
             )
         }
@@ -304,26 +320,31 @@ private fun SessionSheetItem(
         ) {
             DropdownMenuItem(
                 text        = { Text("Rename") },
-                leadingIcon = { Icon(Icons.Rounded.DriveFileRenameOutline, null, modifier = Modifier.size(18.dp)) },
-                onClick     = {
-                    menuExpanded = false
-                    renameText   = session.name
+                leadingIcon = {
+                    Icon(Icons.Rounded.DriveFileRenameOutline, null,
+                        modifier = Modifier.size(17.dp))
+                },
+                onClick = {
+                    menuExpanded     = false
+                    renameText       = session.name
                     showRenameDialog = true
                 },
             )
             DropdownMenuItem(
                 text        = { Text(if (session.isPinned) "Unpin" else "Pin") },
-                leadingIcon = { Icon(Icons.Rounded.PushPin, null, modifier = Modifier.size(18.dp)) },
-                onClick     = { menuExpanded = false; onPin() },
+                leadingIcon = {
+                    Icon(Icons.Rounded.PushPin, null, modifier = Modifier.size(17.dp))
+                },
+                onClick = { menuExpanded = false; onPin() },
             )
             DropdownMenuItem(
                 text        = { Text("Close", color = MaterialTheme.colorScheme.error) },
                 leadingIcon = {
                     Icon(Icons.Rounded.Close, null,
                         tint     = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(18.dp))
+                        modifier = Modifier.size(17.dp))
                 },
-                onClick     = { menuExpanded = false; onClose() },
+                onClick = { menuExpanded = false; onClose() },
             )
         }
     }
@@ -336,7 +357,7 @@ private fun SessionSheetItem(
                 OutlinedTextField(
                     value         = renameText,
                     onValueChange = { renameText = it },
-                    label         = { Text("Session name") },
+                    label         = { Text("Name") },
                     singleLine    = true,
                 )
             },

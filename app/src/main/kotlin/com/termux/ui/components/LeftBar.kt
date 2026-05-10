@@ -6,11 +6,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,7 +22,6 @@ import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,10 +29,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 
-private val PANEL_WIDTH = 72.dp
-private val ICON_SIZE   = 20.dp
+private val PANEL_WIDTH = 56.dp
+private val ICON_SIZE   = 21.dp
 
 @Composable
 fun LeftBar(
@@ -44,45 +42,55 @@ fun LeftBar(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxHeight()) {
+    Box(modifier = modifier.fillMaxSize()) {
+        // Scrim — tap outside to close
+        if (isPanelOpen) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .clickable { onClose() },
+            )
+        }
+
         AnimatedVisibility(
             visible = isPanelOpen,
-            enter   = slideInHorizontally(animationSpec = tween(200)) { -it },
-            exit    = slideOutHorizontally(animationSpec = tween(200)) { -it },
+            enter   = slideInHorizontally(animationSpec = tween(180)) { -it },
+            exit    = slideOutHorizontally(animationSpec = tween(180)) { -it },
         ) {
             Column(
                 modifier = Modifier
                     .width(PANEL_WIDTH)
                     .fillMaxHeight()
+                    // Slightly lighter than terminal bg for subtle separation
                     .background(MaterialTheme.colorScheme.surface)
-                    .statusBarsPadding(),
+                    .statusBarsPadding()
+                    .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top,
             ) {
-                // Hide button
-                PanelItem(
-                    icon       = Icons.Rounded.Close,
-                    label      = "Hide",
-                    tint       = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                    onClick    = onClose,
-                    topPadding = 16.dp,
+                // Close
+                BarIcon(
+                    icon    = Icons.Rounded.Close,
+                    tint    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                    onClick = onClose,
                 )
 
-                PanelItem(
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Snippets
+                BarIcon(
                     icon    = Icons.Rounded.Code,
-                    label   = "Snippets",
                     tint    = MaterialTheme.colorScheme.primary,
                     onClick = onSnippets,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                PanelItem(
-                    icon          = Icons.Rounded.Settings,
-                    label         = "Settings",
-                    tint          = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                    onClick       = onSettings,
-                    bottomPadding = 24.dp,
+                // Settings
+                BarIcon(
+                    icon    = Icons.Rounded.Settings,
+                    tint    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.35f),
+                    onClick = onSettings,
                 )
             }
         }
@@ -90,35 +98,24 @@ fun LeftBar(
 }
 
 @Composable
-private fun PanelItem(
+private fun BarIcon(
     icon: ImageVector,
-    label: String,
     tint: Color,
     onClick: () -> Unit,
-    topPadding: androidx.compose.ui.unit.Dp = 8.dp,
-    bottomPadding: androidx.compose.ui.unit.Dp = 0.dp,
 ) {
-    Column(
+    Box(
         modifier = Modifier
-            .padding(top = topPadding, bottom = bottomPadding)
-            .clip(RoundedCornerShape(8.dp))
+            .padding(vertical = 6.dp)
+            .clip(RoundedCornerShape(10.dp))
             .clickable { onClick() }
-            .padding(horizontal = 10.dp, vertical = 10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+            .padding(10.dp),
+        contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector        = icon,
-            contentDescription = label,
+            contentDescription = null,
             tint               = tint,
             modifier           = Modifier.size(ICON_SIZE),
-        )
-        Text(
-            text     = label,
-            color    = tint,
-            fontSize = 10.sp,
-            modifier = Modifier.padding(top = 4.dp),
-            style    = MaterialTheme.typography.labelSmall,
         )
     }
 }
