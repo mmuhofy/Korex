@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.sp
 import com.termux.terminal.TerminalBridge
 import com.termux.ui.theme.KorexBackground
 
-// ── Escape sequences ──────────────────────────────────────────────────────────
 private const val ESC   = "\u001B"
 private const val TAB   = "\u0009"
 private const val UP    = "\u001B[A"
@@ -35,9 +34,7 @@ private const val HOME  = "\u001B[H"
 private const val END   = "\u001B[F"
 
 private sealed class Key {
-    /** A key that writes a fixed byte sequence to the pty. */
     data class Seq(val label: String, val seq: String) : Key()
-    /** A sticky modifier toggle (CTRL / ALT). */
     data class Modifier(val label: String) : Key()
 }
 
@@ -61,25 +58,11 @@ private val ROW2 = listOf<Key>(
     Key.Seq("PGDN", PGDN),
 )
 
-/**
- * Two-row extra key bar.
- *
- * CTRL / ALT are sticky toggles. When active they write to
- * [TerminalBridge.ctrlDown] / [TerminalBridge.altDown] which are read by
- * [KorexTerminalViewClient.readControlKey()] / [readAltKey()] on the NEXT
- * keyboard event. TerminalView then applies the modifier internally and the
- * flags are auto-consumed (one-shot).
- *
- * Sequence keys (arrows, ESC, etc.) bypass the keyboard pipeline and are
- * written directly to the pty. When a modifier is active it is applied to
- * the sequence (e.g. CTRL+↑ → CSI 1;5A) and consumed immediately.
- */
 @Composable
 fun ExtraKeyBar(
     bridge: TerminalBridge?,
     modifier: Modifier = Modifier,
 ) {
-    // Mirror of viewClient flags so Compose recomposes on toggle
     var ctrlActive by remember { mutableStateOf(false) }
     var altActive  by remember { mutableStateOf(false) }
 
@@ -95,20 +78,16 @@ fun ExtraKeyBar(
 
     fun sendSeq(seq: String) {
         var out = seq
-        // Apply CTRL modifier to escape sequences (arrows etc.)
         if (ctrlActive && seq.length > 1 && seq.startsWith(ESC + "[")) {
-            // Convert "\u001B[X" → "\u001B[1;5X"  (CTRL modifier = param 5)
             val letter = seq.last()
             out = "\u001B[1;5$letter"
             setCtrl(false)
         } else if (ctrlActive) {
-            // Single-char seq with CTRL — convert to control character
             if (seq.length == 1 && seq[0].code in 0x40..0x7E) {
                 out = (seq[0].code and 0x1F).toChar().toString()
             }
             setCtrl(false)
         }
-        // Apply ALT modifier: prefix with ESC
         if (altActive) {
             out = "$ESC$out"
             setAlt(false)
@@ -129,7 +108,8 @@ fun ExtraKeyBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(KorexBackground),   // same as terminal — no visual break
+            // Terminal background — no visual break between terminal and key bar
+            .background(KorexBackground),
     ) {
         KeyRow(ROW1, ctrlActive, altActive) { handleKey(it) }
         KeyRow(ROW2, ctrlActive, altActive) { handleKey(it) }

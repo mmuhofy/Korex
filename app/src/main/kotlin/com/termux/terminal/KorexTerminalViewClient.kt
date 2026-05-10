@@ -34,17 +34,12 @@ class KorexTerminalViewClient(
         get()  = bridge.altDown
         set(v) { bridge.altDown = v }
 
-    override fun readControlKey(): Boolean {
-        val v = bridge.ctrlDown
-        if (v) bridge.ctrlDown = false  // consume — one-shot modifier
-        return v
-    }
-
-    override fun readAltKey(): Boolean {
-        val v = bridge.altDown
-        if (v) bridge.altDown = false   // consume — one-shot modifier
-        return v
-    }
+    // TerminalView calls these on every key event.
+    // ExtraKeyBar resets ctrlDown/altDown to false via bridge after
+    // each sequence key is sent — do NOT consume here or the flag
+    // gets cleared before the keyboard event is processed.
+    override fun readControlKey(): Boolean = bridge.ctrlDown
+    override fun readAltKey(): Boolean     = bridge.altDown
 
     override fun onScale(scale: Float): Float {
         terminalView?.applyFontScale(bridge, scale)
