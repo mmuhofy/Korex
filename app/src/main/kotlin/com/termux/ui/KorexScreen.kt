@@ -27,6 +27,11 @@ import com.termux.ui.components.SnippetSheet
 import com.termux.ui.components.SplitTerminalPane
 import com.termux.ui.components.TopBar
 
+// Screen index constants — used by AnimatedContent
+private const val SCREEN_MAIN     = 0
+private const val SCREEN_SETTINGS = 1
+private const val SCREEN_THEMES   = 2
+
 @Composable
 fun KorexScreen(
     viewModel: MainViewModel = hiltViewModel(),
@@ -43,16 +48,13 @@ fun KorexScreen(
     val history         by historyViewModel.history.collectAsStateWithLifecycle()
     val searchQuery     by historyViewModel.searchQuery.collectAsStateWithLifecycle()
     val settings        by settingsViewModel.settings.collectAsStateWithLifecycle()
-
-    // Font size as Int — drives hot-apply in TerminalViewCompose
-    val fontSize = settings.fontSize.toInt()
+    val fontSize        = settings.fontSize.toInt()
 
     var isPanelOpen          by remember { mutableStateOf(false) }
     var showNewSessionDialog by remember { mutableStateOf(false) }
     var showSnippetSheet     by remember { mutableStateOf(false) }
     var showHistorySheet     by remember { mutableStateOf(false) }
-    var showSettings         by remember { mutableStateOf(false) }
-    var showThemes           by remember { mutableStateOf(false) }
+    var currentScreen        by remember { mutableStateOf(SCREEN_MAIN) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -61,79 +63,91 @@ fun KorexScreen(
     }
 
     AnimatedContent(
-        targetState = showThemes to showSettings,
+        targetState = currentScreen,
         transitionSpec = {
-            if (targetState.first || targetState.second) slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
-            else             slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+            if (targetState > initialState) {
+                slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+            } else {
+                slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
+            }
         },
         label = "screen_transition",
-    ) { (isThemes, isSettings) ->
-        when {
-            isThemes   -> ThemeMarketplaceScreen(onBack = { showThemes = false })
-            isSettings -> SettingsScreen(onBack = { showSettings = false })
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-            ) {
-                Column(
+    ) { screen ->
+        when (screen) {
+            SCREEN_THEMES   -> ThemeMarketplaceScreen(
+                onBack = { currentScreen = SCREEN_MAIN },
+            )
+            SCREEN_SETTINGS -> SettingsScreen(
+                onBack = { currentScreen = SCREEN_MAIN },
+            )
+            else -> {
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .imePadding(),
+                        .background(MaterialTheme.colorScheme.background),
                 ) {
-                    TopBar(
-                        activeSessionName = activeSession?.name,
-                        sessions          = sessions,
-                        activeSessionId   = activeSessionId,
-                        isSplit           = splitState?.isSplit == true,
-                        onHamburgerClick  = { isPanelOpen = true },
-                        onSessionClick    = { viewModel.switchTo(it) },
-                        onSessionClose    = { viewModel.closeSession(it) },
-                        onSessionRename   = { id, name -> viewModel.renameSession(id, name) },
-                        onSessionPin      = { id, pinned -> viewModel.pinSession(id, pinned) },
-                        onNewSession      = { showNewSessionDialog = true },
-                        onToggleSplit     = {
-                            if (splitState?.isSplit == true) viewModel.exitSplit()
-                            else viewModel.enterSplit()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .imePadding(),
+                    ) {
+                        TopBar(
+                            activeSessionName = activeSession?.name,
+                            sessions          = sessions,
+                            activeSessionId   = activeSessionId,
+                            isSplit           = splitState?.isSplit == true,
+                            onHamburgerClick  = { isPanelOpen = true },
+                            onSessionClick    = { viewModel.switchTo(it) },
+                            onSessionClose    = { viewModel.closeSession(it) },
+                            onSessionRename   = { id, name -> viewModel.renameSession(id, name) },
+                            onSessionPin      = { id, pinned -> viewModel.pinSession(id, pinned) },
+                            onNewSession      = { showNewSessionDialog = true },
+                            onToggleSplit     = {
+                                if (splitState?.isSplit == true) viewModel.exitSplit()
+                                else viewModel.enterSplit()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
 
-                    SplitTerminalPane(
-                        splitState      = splitState,
-                        getBridge       = { viewModel.getBridge(it) },
-                        activeSessionId = activeSessionId,
-                        fontSize        = fontSize,
-                        onSwipeLeft     = { viewModel.switchToNext() },
-                        onSwipeRight    = { viewModel.switchToPrevious() },
-                        onSwipeUp       = { showHistorySheet = true },
-                        onRatioChange   = { viewModel.updateSplitRatio(it) },
-                        onEnterSplit    = { viewModel.enterSplit() },
-                        onExitSplit     = { viewModel.exitSplit() },
-                        modifier        = Modifier.weight(1f),
-                    )
+                        SplitTerminalPane(
+                            splitState      = splitState,
+                            getBridge       = { viewModel.getBridge(it) },
+                            activeSessionId = activeSessionId,
+                            fontSize        = fontSize,
+                            onSwipeLeft     = { viewModel.switchToNext() },
+                            onSwipeRight    = { viewModel.switchToPrevious() },
+                            onSwipeUp       = { showHistorySheet = true },
+                            onRatioChange   = { viewModel.updateSplitRatio(it) },
+                            onEnterSplit    = { viewModel.enterSplit() },
+                            onExitSplit     = { viewModel.exitSplit() },
+                            modifier        = Modifier.weight(1f),
+                        )
 
-                    ExtraKeyBar(
-                        bridge   = activeBridge,
-                        modifier = Modifier.fillMaxWidth(),
+                        ExtraKeyBar(
+                            bridge   = activeBridge,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+
+                    LeftBar(
+                        isPanelOpen      = isPanelOpen,
+                        onHamburgerClick = { isPanelOpen = true },
+                        onClose          = { isPanelOpen = false },
+                        onSnippets       = { isPanelOpen = false; showSnippetSheet = true },
+                        onThemes         = { isPanelOpen = false; currentScreen = SCREEN_THEMES },
+                        onSettings       = { isPanelOpen = false; currentScreen = SCREEN_SETTINGS },
                     )
                 }
-
-                LeftBar(
-                    isPanelOpen      = isPanelOpen,
-                    onHamburgerClick = { isPanelOpen = true },
-                    onClose          = { isPanelOpen = false },
-                    onSnippets       = { isPanelOpen = false; showSnippetSheet = true },
-                    onSettings       = { isPanelOpen = false; showSettings = true },
-                    onThemes         = { isPanelOpen = false; showThemes = true },
-                )
             }
         }
     }
 
     if (showNewSessionDialog) {
         NewSessionDialog(
-            onConfirm = { name -> viewModel.createSession(name); showNewSessionDialog = false },
+            onConfirm = { name ->
+                viewModel.createSession(name)
+                showNewSessionDialog = false
+            },
             onDismiss = { showNewSessionDialog = false },
         )
     }
