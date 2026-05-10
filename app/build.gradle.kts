@@ -11,15 +11,11 @@ android {
     compileSdk  = 35
 
     defaultConfig {
-        applicationId = "com.termux"
-        minSdk        = 26
-        targetSdk     = 28
-
-        // CI sets GITHUB_RUN_NUMBER (1, 2, 3, ...) — local builds use 1.
-        // This ensures every CI-built APK has a unique versionCode so Android
-        // never sees "same package, different content" and refuses to install.
-        versionCode = (System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1)
-        versionName = "0.1.0"
+        applicationId   = "com.termux"
+        minSdk          = 26
+        targetSdk       = 28
+        versionCode     = 1
+        versionName     = "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -33,6 +29,17 @@ android {
         }
     }
 
+    // Pinned debug keystore — ensures every build (local + CI) produces
+    // the same APK signature, so Android allows direct update without uninstall.
+    signingConfigs {
+        getByName("debug") {
+            storeFile     = rootProject.file("debug.keystore")
+            storePassword = "android"
+            keyAlias      = "androiddebugkey"
+            keyPassword   = "android"
+        }
+    }
+
     externalNativeBuild {
         ndkBuild {
             path = file("src/main/jni/Android.mk")
@@ -40,6 +47,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(
@@ -81,11 +91,13 @@ android {
 }
 
 dependencies {
+    // AndroidX Core
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.activity.compose)
 
+    // Compose BOM
     val composeBom = platform(libs.compose.bom)
     implementation(composeBom)
     implementation(libs.compose.ui)
@@ -95,25 +107,37 @@ dependencies {
     implementation(libs.compose.foundation)
     debugImplementation(libs.compose.ui.tooling)
 
+    // Material Components (required for Theme.Material3.DayNight.NoActionBar)
     implementation(libs.materialComponents)
+
+    // Material Icons
     implementation(libs.compose.material.icons.core)
     implementation(libs.compose.material.icons.extended)
+
+    // Navigation
     implementation(libs.navigation.compose)
 
+    // Hilt
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
+    // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
 
+    // DataStore
     implementation(libs.datastore.preferences)
 
+    // Termux terminal engine — local modules
     implementation(project(":core:terminal-emulator"))
     implementation(project(":core:terminal-view"))
 
+    // Phosphor Icons
     implementation(libs.phosphor.icons)
+
+    // Guava + concurrent-futures (required by terminal-view)
     implementation(libs.guava)
     implementation(libs.concurrent.futures)
 }

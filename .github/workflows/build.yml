@@ -6,13 +6,6 @@ on:
   pull_request:
     branches: [ main ]
 
-# Versions pinned here — bump to invalidate bootstrap cache
-env:
-  TERMUX_APK_URL: "https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3+github-debug_arm64-v8a.apk"
-  BOOTSTRAP_ZIP:  "bootstrap-aarch64-korex.zip"
-  # Cache key: change this string to force a full bootstrap rebuild
-  BOOTSTRAP_CACHE_KEY: "bootstrap-v0.118.3-proot-v1"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -21,34 +14,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── Cache bootstrap zip ──────────────────────────────────────────────
-      # If the zip is already cached (same BOOTSTRAP_CACHE_KEY) the entire
-      # "Prepare bootstrap" step is skipped — saves ~3-5 min per build.
-      - name: Cache bootstrap zip
-        id: cache-bootstrap
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.BOOTSTRAP_ZIP }}
-          key:  ${{ env.BOOTSTRAP_CACHE_KEY }}
-
-      # ── Cache Gradle home ────────────────────────────────────────────────
-      # Caches downloaded dependencies and build outputs.
-      # Key includes build.gradle.kts hash so it invalidates on dep changes.
-      - name: Cache Gradle
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('**/*.gradle.kts', '**/libs.versions.toml') }}
-          restore-keys: gradle-
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
 
       - name: Set up Android NDK
         uses: android-actions/setup-android@v3
@@ -58,11 +28,9 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      # ── Prepare bootstrap (skipped if cache hit) ─────────────────────────
       - name: Prepare bootstrap from Termux APK
-        if: steps.cache-bootstrap.outputs.cache-hit != 'true'
         run: |
-          set -euo pipefail
+          TERMUX_APK_URL="https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3+github-debug_arm64-v8a.apk"
 
           echo "=== Downloading Termux APK ==="
           wget -q "$TERMUX_APK_URL" -O termux.apk
@@ -75,7 +43,7 @@ jobs:
           echo "=== APK lib contents ==="
           ls termux-apk/lib/arm64-v8a/
 
-          echo "=== Extracting bootstrap zip from libtermux-bootstrap.so ==="
+          # Extract bootstrap zip from libtermux-bootstrap.so
           python3 - <<'PYEOF'
           import sys
           with open("termux-apk/lib/arm64-v8a/libtermux-bootstrap.so", "rb") as f:
@@ -99,6 +67,9 @@ jobs:
           ls patched_bootstrap/
           find patched_bootstrap -name "proot" | head -3
 
+          # No package name patching needed — app uses com.termux directly
+          echo "✓ No patch needed"
+
           # Copy libs to usr/lib
           if [ -d "patched_bootstrap/lib" ]; then
             mkdir -p patched_bootstrap/usr/lib
@@ -108,12 +79,18 @@ jobs:
 
           # Inject proot if not present
           if [ ! -f "patched_bootstrap/bin/proot" ]; then
-            echo "=== Injecting proot ==="
-            PROOT_URL=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/" \
-              | grep -o 'proot_[^"]*_aarch64\.deb' | tail -1)
-            wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/$PROOT_URL" -O proot.deb
+            echo "=== proot not found, downloading ==="
+            wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/proot_5.4.0-1_aarch64.deb" \
+              -O proot.deb 2>/dev/null || true
 
-            mkdir -p proot_extract && cd proot_extract
+            if [ ! -s proot.deb ]; then
+              PROOT_URL=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/" \
+                | grep -o 'proot_[^"]*_aarch64\.deb' | tail -1)
+              wget -q "https://packages.termux.dev/apt/termux-main/pool/main/p/proot/$PROOT_URL" -O proot.deb
+            fi
+
+            mkdir -p proot_extract
+            cd proot_extract
             ar x ../proot.deb
             tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
             cd ..
@@ -122,73 +99,65 @@ jobs:
             if [ -n "$PROOT_BIN" ]; then
               mkdir -p patched_bootstrap/bin
               cp "$PROOT_BIN" patched_bootstrap/bin/proot
+              perl -pi -e 's/com\.termux/com.korexx/g' patched_bootstrap/bin/proot 2>/dev/null || true
               chmod +x patched_bootstrap/bin/proot
               echo "✓ proot injected"
+
+              echo "=== Finding libtalloc ==="
+              curl -s "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/" | grep -o 'libtalloc_[^"]*_aarch64\.deb' | tail -1
+
+              TALLOC_DEB=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/" \
+                | grep -o 'libtalloc_[^"]*_aarch64\.deb' | tail -1)
+
+              echo "libtalloc deb: $TALLOC_DEB"
+
+              if [ -n "$TALLOC_DEB" ]; then
+                wget -q "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/$TALLOC_DEB" \
+                  -O libtalloc.deb
+                ls -lh libtalloc.deb
+
+                mkdir -p libtalloc_extract
+                cd libtalloc_extract
+                ar x ../libtalloc.deb
+                tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
+                cd ..
+
+                TALLOC_LIB=$(find libtalloc_extract -name "libtalloc.so*" -type f | head -1)
+                if [ -n "$TALLOC_LIB" ]; then
+                  cp "$TALLOC_LIB" patched_bootstrap/lib/libtalloc.so.2
+                  echo "✓ libtalloc.so.2 injected"
+                else
+                  echo "WARNING: libtalloc lib not found in .deb"
+                  find libtalloc_extract -type f | head -10
+                fi
+              else
+                echo "WARNING: libtalloc deb not found on server"
+              fi
             else
               echo "WARNING: proot binary not found in .deb"
             fi
-
-            echo "=== Injecting libtalloc ==="
-            TALLOC_DEB=$(curl -s "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/" \
-              | grep -o 'libtalloc_[^"]*_aarch64\.deb' | tail -1)
-
-            if [ -n "$TALLOC_DEB" ]; then
-              wget -q "https://packages.termux.dev/apt/termux-main/pool/main/libt/libtalloc/$TALLOC_DEB" -O libtalloc.deb
-              mkdir -p libtalloc_extract && cd libtalloc_extract
-              ar x ../libtalloc.deb
-              tar xf data.tar.xz 2>/dev/null || tar xf data.tar.gz 2>/dev/null
-              cd ..
-
-              TALLOC_LIB=$(find libtalloc_extract -name "libtalloc.so*" -type f | head -1)
-              if [ -n "$TALLOC_LIB" ]; then
-                cp "$TALLOC_LIB" patched_bootstrap/lib/libtalloc.so.2
-                echo "✓ libtalloc.so.2 injected"
-              else
-                echo "WARNING: libtalloc lib not found in .deb"
-              fi
-            else
-              echo "WARNING: libtalloc deb not found"
-            fi
           else
-            echo "✓ proot already present in bootstrap"
+            echo "✓ proot already present"
           fi
 
-          # Repack with -X (no extra fields) and -D (no dir timestamps)
-          # so zip content is deterministic across runs
-          echo "=== Repacking (deterministic) ==="
+          # Repack
+          echo "=== Repacking ==="
           cd patched_bootstrap
-          find . -type f | sort | zip -r9X "../$BOOTSTRAP_ZIP" -@ 2>/dev/null
+          zip -r9 ../bootstrap-aarch64-korex.zip . 2>/dev/null
           cd ..
-          ls -lh "$BOOTSTRAP_ZIP"
-          echo "✓ Bootstrap ready"
-
-      - name: Verify bootstrap zip exists
-        run: |
-          ls -lh "$BOOTSTRAP_ZIP"
-          echo "✓ Bootstrap zip present (cache-hit: ${{ steps.cache-bootstrap.outputs.cache-hit }})"
-
-      # ── Keystore ─────────────────────────────────────────────────────────
-      # Use the debug.keystore committed to the repo root so every build
-      # is signed with the exact same key — prevents "package conflict" errors.
-      - name: Restore debug keystore
-        run: |
-          mkdir -p ~/.android
-          cp debug.keystore ~/.android/debug.keystore
-          echo "✓ Debug keystore restored from repo"
+          ls -lh bootstrap-aarch64-korex.zip
 
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      # ── Build ─────────────────────────────────────────────────────────────
       - name: Build debug APK
         env:
-          BOOTSTRAP_ZIP_PATH: ${{ github.workspace }}/${{ env.BOOTSTRAP_ZIP }}
-        run: ./gradlew assembleDebug --build-cache --parallel
+          BOOTSTRAP_ZIP_PATH: ${{ github.workspace }}/bootstrap-aarch64-korex.zip
+        run: ./gradlew assembleDebug
 
-      # ── Artifact ──────────────────────────────────────────────────────────
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: korex-debug
           path: app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 14
+          retention-days: 7
