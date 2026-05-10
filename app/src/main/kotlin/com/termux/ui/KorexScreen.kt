@@ -52,6 +52,7 @@ fun KorexScreen(
     var showSnippetSheet     by remember { mutableStateOf(false) }
     var showHistorySheet     by remember { mutableStateOf(false) }
     var showSettings         by remember { mutableStateOf(false) }
+    var showThemes           by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { viewModel.restoreOnStart() }
     LaunchedEffect(sessions) {
@@ -60,16 +61,16 @@ fun KorexScreen(
     }
 
     AnimatedContent(
-        targetState = showSettings,
+        targetState = showThemes to showSettings,
         transitionSpec = {
-            if (targetState) slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
+            if (targetState.first || targetState.second) slideInHorizontally { it } togetherWith slideOutHorizontally { -it }
             else             slideInHorizontally { -it } togetherWith slideOutHorizontally { it }
         },
-        label = "settings_transition",
-    ) { isSettings ->
-        if (isSettings) {
-            SettingsScreen(onBack = { showSettings = false })
-        } else {
+        label = "screen_transition",
+    ) { (isThemes, isSettings) ->
+        when {
+            isThemes   -> ThemeMarketplaceScreen(onBack = { showThemes = false })
+            isSettings -> SettingsScreen(onBack = { showSettings = false })
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -124,6 +125,7 @@ fun KorexScreen(
                     onClose          = { isPanelOpen = false },
                     onSnippets       = { isPanelOpen = false; showSnippetSheet = true },
                     onSettings       = { isPanelOpen = false; showSettings = true },
+                    onThemes         = { isPanelOpen = false; showThemes = true },
                 )
             }
         }

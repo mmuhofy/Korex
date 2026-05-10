@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Code
-import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -39,6 +39,7 @@ fun LeftBar(
     onHamburgerClick: () -> Unit,
     onClose: () -> Unit,
     onSnippets: () -> Unit,
+    onThemes: () -> Unit,
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -82,6 +83,15 @@ fun LeftBar(
                     icon    = Icons.Rounded.Code,
                     tint    = MaterialTheme.colorScheme.primary,
                     onClick = onSnippets,
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Themes
+                BarIcon(
+                    icon    = Icons.Rounded.Palette,
+                    tint    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.45f),
+                    onClick = onThemes,
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
