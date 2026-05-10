@@ -10,9 +10,12 @@ import com.termux.data.session.SessionDao
 import com.termux.data.session.SessionRepositoryImpl
 import com.termux.data.snippet.SnippetDao
 import com.termux.data.snippet.SnippetRepositoryImpl
+import com.termux.data.theme.ThemeDao
+import com.termux.data.theme.ThemeRepositoryImpl
 import com.termux.domain.CommandHistoryRepository
 import com.termux.domain.SessionRepository
 import com.termux.domain.SnippetRepository
+import com.termux.domain.ThemeRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -32,14 +35,10 @@ object DatabaseModule {
             .fallbackToDestructiveMigration()
             .build()
 
-    @Provides
-    fun provideSessionDao(db: KorexDatabase): SessionDao = db.sessionDao()
-
-    @Provides
-    fun provideSnippetDao(db: KorexDatabase): SnippetDao = db.snippetDao()
-
-    @Provides
-    fun provideCommandHistoryDao(db: KorexDatabase): CommandHistoryDao = db.commandHistoryDao()
+    @Provides fun provideSessionDao(db: KorexDatabase): SessionDao = db.sessionDao()
+    @Provides fun provideSnippetDao(db: KorexDatabase): SnippetDao = db.snippetDao()
+    @Provides fun provideCommandHistoryDao(db: KorexDatabase): CommandHistoryDao = db.commandHistoryDao()
+    @Provides fun provideThemeDao(db: KorexDatabase): ThemeDao = db.themeDao()
 
     @Provides
     @Singleton
@@ -51,15 +50,15 @@ object DatabaseModule {
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
-    @Binds
-    @Singleton
+    @Binds @Singleton
     abstract fun bindSessionRepository(impl: SessionRepositoryImpl): SessionRepository
 
-    @Binds
-    @Singleton
+    @Binds @Singleton
     abstract fun bindSnippetRepository(impl: SnippetRepositoryImpl): SnippetRepository
 
-    @Binds
-    @Singleton
+    @Binds @Singleton
     abstract fun bindCommandHistoryRepository(impl: CommandHistoryRepositoryImpl): CommandHistoryRepository
+
+    @Binds @Singleton
+    abstract fun bindThemeRepository(impl: ThemeRepositoryImpl): ThemeRepository
 }
