@@ -25,7 +25,7 @@ import com.termux.terminal.TerminalBridge
 
 private const val ESC   = "\u001B"
 private const val TAB   = "\u0009"
-private const val ENTER = "\r"
+
 private const val UP    = "\u001B[A"
 private const val DOWN  = "\u001B[B"
 private const val LEFT  = "\u001B[D"
@@ -88,11 +88,6 @@ fun ExtraKeyBar(
         if (altActive) {
             out = "$ESC$out"
             altActive = false
-        }
-
-        // Start timer when Enter is sent
-        if (out == ENTER || out == "\n") {
-            timer?.onCommandStarted()
         }
 
         bridge?.write(out)
@@ -195,7 +190,7 @@ private fun KeyRow(
                 fontSize = 13.sp,
                 style    = MaterialTheme.typography.labelMedium,
                 modifier = Modifier
-                    .clickable { onKey(it) }
+                    .clickable { onKey(key) }
                     .padding(horizontal = 6.dp, vertical = 8.dp),
             )
         }

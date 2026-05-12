@@ -11,18 +11,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * Tracks how long the current command has been running.
+ * Tracks command duration via shell OSC title signals.
  *
- * Usage:
- *   - Call [onCommandStarted] when Enter is sent to terminal
- *   - Call [onPromptDetected] when a shell prompt appears in output
- *   - Observe [elapsedSeconds] for live UI updates
- *   - Observe [lastDuration] for the finished command's duration (null = no previous command)
+ * Shell sends:
+ *   KOREX_START        → preexec  (command started)
+ *   KOREX_END:<secs>   → precmd   (command finished, shell-measured duration)
+ *
+ * We also run a local tick so the UI shows a live counter while waiting.
  */
 class CommandTimer {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-
     private var tickJob: Job? = null
     private var startTime: Long = 0L
 
@@ -30,13 +29,13 @@ class CommandTimer {
     private val _elapsedSeconds = MutableStateFlow<Int?>(null)
     val elapsedSeconds: StateFlow<Int?> = _elapsedSeconds.asStateFlow()
 
-    // Duration of the last completed command in seconds (null = no command yet)
+    // Duration of the last completed command in seconds (null = none yet)
     private val _lastDuration = MutableStateFlow<Int?>(null)
     val lastDuration: StateFlow<Int?> = _lastDuration.asStateFlow()
 
     val isRunning: Boolean get() = tickJob?.isActive == true
 
-    /** Call this when the user sends a command (Enter pressed). */
+    /** Called when shell fires preexec (KOREX_START). */
     fun onCommandStarted() {
         tickJob?.cancel()
         startTime = System.currentTimeMillis()
@@ -50,16 +49,22 @@ class CommandTimer {
     }
 
     /**
-     * Call this when a shell prompt is detected in terminal output.
-     * Stops the timer and records the final duration.
+     * Called when shell fires precmd (KOREX_END:<secs>).
+     * Uses shell-measured duration for accuracy.
      */
-    fun onPromptDetected() {
-        if (!isRunning) return
+    fun onCommandFinished(durationSeconds: Int) {
         tickJob?.cancel()
         tickJob = null
-        val duration = ((System.currentTimeMillis() - startTime) / 1000).toInt()
-        _lastDuration.value = duration
         _elapsedSeconds.value = null
+        _lastDuration.value = durationSeconds
+
+        // Clear the "finished" indicator after 5 seconds
+        scope.launch {
+            delay(5_000)
+            if (_lastDuration.value == durationSeconds) {
+                _lastDuration.value = null
+            }
+        }
     }
 
     fun reset() {

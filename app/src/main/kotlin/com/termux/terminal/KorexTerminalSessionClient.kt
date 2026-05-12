@@ -6,20 +6,24 @@ import android.content.Context
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 
-// Prompt patterns that indicate a command has finished.
-// Matches common bash/zsh/sh prompts ending with $ # or %
-private val PROMPT_REGEX = Regex(""".*[\$#%]\s*$""")
+// OSC title signals injected by shell hooks
+private const val SIGNAL_START  = "KOREX_START"
+private const val SIGNAL_END    = "KOREX_END:"
 
 /**
  * TerminalSessionClient implementation.
- * onTextChanged must call invalidate on the TerminalView to trigger a redraw.
- * Also detects shell prompt lines to stop the CommandTimer.
+ *
+ * Shell duration tracking via OSC title signals:
+ *   - preexec sets title to "KOREX_START"
+ *   - precmd  sets title to "KOREX_END:<seconds>"
+ *
+ * onTitleChanged fires when the terminal receives an OSC title escape sequence.
+ * We parse these signals here and drive CommandTimer accordingly.
  */
 class KorexTerminalSessionClient(
     private val context: Context,
     val timer: CommandTimer = CommandTimer(),
     private val onSessionFinished: (TerminalSession) -> Unit = {},
-    private val onTitleChanged: (TerminalSession) -> Unit = {},
     private val onBell: (TerminalSession) -> Unit = {},
     private val onColorsChanged: (TerminalSession) -> Unit = {},
 ) : TerminalSessionClient {
@@ -28,33 +32,17 @@ class KorexTerminalSessionClient(
 
     override fun onTextChanged(changedSession: TerminalSession) {
         terminalView?.invalidate()
-        detectPrompt(changedSession)
-    }
-
-    /**
-     * Reads the last non-empty line from the terminal buffer.
-     * If it matches a prompt pattern, stops the command timer.
-     */
-    private fun detectPrompt(session: TerminalSession) {
-        if (!timer.isRunning) return
-        val emulator = session.emulator ?: return
-        val screen   = emulator.screen
-        val rows     = emulator.mRows
-
-        // Scan from bottom up for the last non-empty line
-        for (row in rows - 1 downTo 0) {
-            val line = screen.getSelectedText(0, row, emulator.mColumns, row).trimEnd()
-            if (line.isNotEmpty()) {
-                if (PROMPT_REGEX.matches(line)) {
-                    timer.onPromptDetected()
-                }
-                break
-            }
-        }
     }
 
     override fun onTitleChanged(changedSession: TerminalSession) {
-        onTitleChanged.invoke(changedSession)
+        val title = changedSession.title ?: return
+        when {
+            title == SIGNAL_START -> timer.onCommandStarted()
+            title.startsWith(SIGNAL_END) -> {
+                val secs = title.removePrefix(SIGNAL_END).toIntOrNull() ?: return
+                timer.onCommandFinished(secs)
+            }
+        }
     }
 
     override fun onSessionFinished(finishedSession: TerminalSession) {
@@ -73,8 +61,8 @@ class KorexTerminalSessionClient(
         session?.getEmulator()?.paste(text)
     }
 
-    override fun onBell(session: TerminalSession)           { onBell.invoke(session) }
-    override fun onColorsChanged(session: TerminalSession)  { onColorsChanged.invoke(session) }
+    override fun onBell(session: TerminalSession)            { onBell.invoke(session) }
+    override fun onColorsChanged(session: TerminalSession)   { onColorsChanged.invoke(session) }
     override fun onTerminalCursorStateChange(state: Boolean) {}
     override fun setTerminalShellPid(session: TerminalSession, pid: Int) {}
     override fun getTerminalCursorStyle(): Int = 0
